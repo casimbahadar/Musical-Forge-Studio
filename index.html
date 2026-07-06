@@ -1370,8 +1370,14 @@ function downloadBlob(name, blob){
   document.body.appendChild(a); a.click();
   setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
 }
+const MADE_WITH = "Theme Remix Composer — https://casimbahadar.github.io/Theme-Remix-Composer/";
+function stampMadeWith(obj){
+  if (Array.isArray(obj)) return obj.map(stampMadeWith);
+  if (obj && typeof obj === "object") return { ...obj, _made_with: MADE_WITH };
+  return obj;
+}
 function downloadJSON(name, obj){
-  downloadBlob(name, new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }));
+  downloadBlob(name, new Blob([JSON.stringify(stampMadeWith(obj), null, 2)], { type: "application/json" }));
 }
 
 $("f-dlall").addEventListener("click", () => {
