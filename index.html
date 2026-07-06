@@ -1258,20 +1258,33 @@ $("f-copy").addEventListener("click", () => {
   setStatus(null, "Recipe shown below — share it or keep it — anyone can Import it here to hear the exact same theme.");
 });
 
+/* storage adapter: window.storage inside Claude, localStorage in a browser.
+   Same keys, same JSON payloads either way. */
+async function storeGet(key){
+  if (window.storage){ const r = await window.storage.get(key); return r && r.value; }
+  try { return localStorage.getItem(key); } catch (e){ return null; }
+}
+async function storeSet(key, val){
+  if (window.storage){ await window.storage.set(key, val); return; }
+  try { localStorage.setItem(key, val); } catch (e){ /* private mode / quota */ }
+}
+function storeAvailable(){
+  if (window.storage) return true;
+  try { return typeof localStorage !== "undefined" && localStorage !== null; }
+  catch (e){ return false; }
+}
+
 async function loadCustoms(){
   try {
-    if (window.storage){
-      const r = await window.storage.get("theme-forge-saves");
-      if (r && r.value) CUSTOMS = JSON.parse(r.value);
-    }
+    const v = await storeGet("theme-forge-saves");
+    if (v) CUSTOMS = JSON.parse(v);
   } catch (e){ /* no saved themes yet */ }
   renderCustoms();
 }
 async function persistCustoms(){
   try {
-    if (window.storage)
-      await window.storage.set("theme-forge-saves", JSON.stringify(CUSTOMS));
-  } catch (e){ /* storage unavailable outside Claude — session-only */ }
+    await storeSet("theme-forge-saves", JSON.stringify(CUSTOMS));
+  } catch (e){ /* storage unavailable — session-only */ }
 }
 
 $("f-save").addEventListener("click", async () => {
@@ -1281,8 +1294,8 @@ $("f-save").addEventListener("click", async () => {
   await persistCustoms();
   renderCustoms();
   setStatus(null, "Saved as " + t.id + ". " +
-    (window.storage ? "It persists across sessions here." :
-     "Storage unavailable outside Claude — use Copy recipe to keep it permanently."));
+    (storeAvailable() ? "It persists across sessions here." :
+     "Storage unavailable here — use Copy recipe to keep it permanently."));
 });
 
 const customsEl = document.getElementById("customs");
@@ -1807,18 +1820,15 @@ $("r-export").addEventListener("click", async () => {
 let FX_SAVES = [];
 async function loadFxSaves(){
   try {
-    if (window.storage){
-      const r = await window.storage.get("theme-forge-fx-presets");
-      if (r && r.value) FX_SAVES = JSON.parse(r.value);
-    }
+    const v = await storeGet("theme-forge-fx-presets");
+    if (v) FX_SAVES = JSON.parse(v);
   } catch (e){ /* none yet */ }
   renderFxSaves();
 }
 async function persistFxSaves(){
   try {
-    if (window.storage)
-      await window.storage.set("theme-forge-fx-presets", JSON.stringify(FX_SAVES));
-  } catch (e){ /* session-only outside Claude */ }
+    await storeSet("theme-forge-fx-presets", JSON.stringify(FX_SAVES));
+  } catch (e){ /* session-only */ }
 }
 
 $("fx-save").addEventListener("click", async () => {
@@ -1832,8 +1842,8 @@ $("fx-save").addEventListener("click", async () => {
   renderFxSaves();
   $("fx-name").value = "";
   setStatus(null, "FX preset saved" +
-    (window.storage ? " — it persists across sessions here." :
-     " for this session. Storage is unavailable outside Claude — use its ⬇ JSON to keep it — the Import button accepts it back anytime."));
+    (storeAvailable() ? " — it persists across sessions here." :
+     " for this session. Storage is unavailable here — use its ⬇ JSON to keep it — the Import button accepts it back anytime."));
 });
 
 const fxListEl = document.getElementById("fx-list");
