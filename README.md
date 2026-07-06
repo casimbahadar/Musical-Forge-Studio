@@ -1,10 +1,10 @@
-# Theme Forge
+# Theme Remix Composer
 
 A generative game-music maker and remix studio that runs in your browser.
 One HTML file, zero dependencies, pure Web Audio API.
 
-**[▶ Try it live](https://YOUR-USERNAME.github.io/theme-forge/)** *(update
-this link after enabling GitHub Pages)*
+**[▶ Try it live](https://casimbahadar.github.io/Theme-Remix-Composer/)**
+*(enable GitHub Pages on this repo to activate the link)*
 
 Compose looping game themes — overworld, battle, town, dungeon — by choosing
 ingredients instead of writing notes: an instrument, a key, a mood, a tempo,
