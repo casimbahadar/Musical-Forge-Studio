@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Theme Remix Composer — generative game music</title>
+<meta name="description" content="Compose looping game music in your browser — pick ingredients, roll the dice, export WAVs. Plus a live remix FX rack and a sheet-music composer.">
+<meta property="og:title" content="Musical Forge Studio">
+<meta property="og:description" content="Compose looping game music in your browser — pick ingredients, roll the dice, export WAVs.">
+<meta property="og:type" content="website">
+<title>Musical Forge Studio — make game music in your browser</title>
 <style>
   :root{
     --night:#12101f; --panel:#1c1930; --panel2:#242040;
@@ -21,6 +25,11 @@
     padding:18px 14px 40px;
   }
   .cart{width:100%;max-width:580px}
+  @media (min-width:760px){.cart{max-width:740px}}
+  @media (min-width:1100px){.cart{max-width:1080px}}
+  @media (min-width:1500px){.cart{max-width:1340px}}
+  .durlabel{font-size:9px;color:var(--dim);letter-spacing:.15em}
+  .durbtn svg{display:block;margin:0 auto}
   .eyebrow{font-size:10px;letter-spacing:.35em;color:var(--dim);text-transform:uppercase}
   h1{font-size:20px;letter-spacing:.14em;font-weight:700;color:var(--moon);margin:6px 0 2px;text-transform:uppercase}
   .sub{font-size:11px;color:var(--dim);margin-bottom:14px}
@@ -159,21 +168,85 @@
   .mini:last-child{color:var(--err);flex:0 0 34px}
   .mini:active{transform:scale(.95)}
   @media (prefers-reduced-motion: reduce){.fill{transition:none}}
+
+  .view[hidden]{display:none!important}
+  .vnav{display:flex;align-items:center;gap:12px;margin:2px 0 14px}
+  .vnav span{font-size:11px;letter-spacing:.2em;color:var(--glow);text-transform:uppercase}
+  .statusline{font-size:10px;color:var(--dim);line-height:1.5;min-height:14px;margin:0 0 12px}
+  .statusline .err{color:var(--err)} .statusline b{color:var(--glow)}
+  .homecards{display:grid;gap:12px;margin-top:10px}
+  .homecard{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:18px 16px;text-align:left;color:var(--ink);font-family:inherit;cursor:pointer;
+    transition:border-color .15s}
+  .homecard:hover{border-color:var(--moon)}
+  .homecard:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+  .hc-emoji{font-size:26px;margin-bottom:8px}
+  .hc-name{font-size:15px;font-weight:700;letter-spacing:.08em;color:var(--moon);margin-bottom:6px;text-transform:uppercase}
+  .hc-desc{font-size:11px;color:var(--dim);line-height:1.6}
+  .staffwrap{margin-bottom:10px}
+  .staffwrap svg{display:block;max-width:100%}
+  .staffwrap.book{display:flex;gap:16px;align-items:flex-start}
+  .staffwrap .page{flex:1;min-width:0;background:#f4f0e2;border-radius:8px}
+  .staffwrap.book .page{box-shadow:0 1px 0 #d8d2bf inset}
+  .pager{display:none;align-items:center;justify-content:space-between;gap:10px;margin:-2px 0 10px}
+  .pager span{font-size:10px;color:var(--dim);letter-spacing:.08em}
+  .pager .fbtn:disabled{opacity:.35;cursor:default}
+  .playnote{fill:#1c8f7a!important;stroke:#1c8f7a!important}
+  .durrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+  .durbtn{min-width:44px;padding:9px 8px;border-radius:7px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);font-family:inherit;font-size:17px;cursor:pointer;line-height:1}
+  .durbtn.on{border-color:var(--moon);color:var(--moon)}
+  .durbtn.small{font-size:11px;font-weight:700;padding:11px 10px}
+  .durrow select{background:var(--panel2);border:1px solid var(--line);border-radius:7px;
+    color:var(--ink);font-family:inherit;font-size:12px;padding:9px}
+  .piano{position:relative;height:120px;display:flex;gap:2px;margin-bottom:12px}
+  .wkey{flex:1;background:#ece8f4;border:1px solid #3a3556;border-radius:0 0 7px 7px;
+    color:#3a3556;font-family:inherit;font-size:11px;font-weight:700;display:flex;
+    align-items:flex-end;justify-content:center;padding-bottom:8px;cursor:pointer}
+  .wkey:active{background:#d8d2ea}
+  .bkey{position:absolute;top:0;width:9.5%;height:66px;background:#221e3c;border:1px solid #000;
+    border-radius:0 0 5px 5px;z-index:2;color:#cfc9e6;font-family:inherit;font-size:9px;
+    display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;cursor:pointer}
+  .bkey:active{background:#3a3560}
+  .seltools{display:none;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .seltools.show{display:flex}
+  .sclen{font-size:11px;color:var(--glow);letter-spacing:.05em;margin:0 0 8px}
 </style>
 </head>
 <body>
 <div class="cart">
-  <div class="eyebrow">single file · no dependencies · web audio · remix lab</div>
-  <h1>Theme Remix Composer</h1>
-  <div class="sub">Craft looping game-music themes from 12 instruments, 7 modes and a seed. Deterministic: same recipe, same music, forever.</div>
+    <h1>Musical Forge Studio</h1>
+    <div id="view-home" class="view">
+    <div class="homecards">
+      <button class="homecard" data-view="view-forge">
+        <div class="hc-emoji">🎛</div><div class="hc-name">Theme Forge</div>
+        <div class="hc-desc">Generate looping game themes from recipes — pick an instrument,
+        mood, tempo and progression, then roll the dice until the melody clicks. Save, share, export WAVs.</div>
+      </button>
+      <button class="homecard" data-view="view-remix">
+        <div class="hc-emoji">🎚</div><div class="hc-name">Remix Lab</div>
+        <div class="hc-desc">Load an audio file and reshape it with a live FX rack — speed, crush,
+        filters, echo, reverb, tape wobble. Save your FX presets; export remixes as WAVs.</div>
+      </button>
+      <button class="homecard" data-view="view-score">
+        <div class="hc-emoji">🎼</div><div class="hc-name">Score Composer</div>
+        <div class="hc-desc">Write music note by note on real sheet music — choose a clef, time
+        signature and instrument, tap piano keys to add notes, hear it as you go, export a WAV.</div>
+      </button>
+    </div>
+    <button class="fbtn" id="galleryBtn" style="margin-top:14px;width:100%">🌐 Community gallery — browse &amp; share creations</button>
+    <div class="statusline" style="margin-top:10px"></div>
+  </div>
 
-  <div class="deck">
+  <div id="view-forge" class="view" hidden>
+  <div class="vnav"><button class="fbtn" data-home>‹ Home</button><span>Theme Forge</span></div>
+<div class="deck">
     <div class="now" id="now"></div>
     <div class="btns">
       <button class="btn" id="playBtn">Play</button>
       <button class="btn" id="exportBtn">Export WAV</button>
     </div>
-    <div id="status">Pick a track below.</div>
+    <div class="statusline" id="status">Pick a track below.</div>
     <div class="meters">
       <div class="ch"><div class="nm">LEAD</div><div class="bar"><div class="fill lead" id="m-lead"></div></div></div>
       <div class="ch"><div class="nm">PAD</div><div class="bar"><div class="fill pad" id="m-pad"></div></div></div>
@@ -215,19 +288,35 @@
       <p><b>Recipes to steal:</b> Boss battle = harmonic minor + Creeping threat + 145 BPM +
       Double-time + Octave drive + Busy + arpeggio. Peaceful village = major + Calm + 90 +
       Light + Walk + marimba. Mystery cave = phrygian + Dark pulse + 72 + Sparse + Whole notes + organ.</p>
-      <p><b>Remix Lab</b> — load an audio file (or a direct .mp3/.ogg/.wav link) and do two things
-      with it: apply a remix style and export the result as a WAV, or tap
-      <i>Send key+tempo to Forge</i> to compose an original theme in the same key, mood and speed
-      as the track — inspired by it, not copied from it. The presets are just starting points:
-      every slider stays live while the music plays, so drag Speed for slowed/nightcore feels,
-      stack Bit crush + High cut for retro grit, push Echo repeats for dub-style tails, or cut
-      the bass and treble together for that old-radio sound. Reset FX returns to neutral. Streaming links (YouTube, Spotify) can
-      never work here; use real audio files you have the rights to.</p>
+      <p><b>Everything else on this page:</b></p>
+      <p><b>The player at the top</b> shows what's selected. <b>Play</b> loops the current theme
+      (tap again to stop), <b>Export WAV</b> renders it to a real audio file you can keep and use
+      anywhere, and the four bars are level meters — LEAD is the melody, PAD the background chords,
+      BASS the low end, DRUMS the rhythm. Watching them helps you hear which layer is which.</p>
+      <p><b>Examples</b> are ready-made recipes: tap one and it loads into the forge <i>and</i>
+      plays, so you can learn by remixing — change one control at a time and hear what it does.</p>
+      <p><b>Your themes</b> (appears after your first Save): tap a card to play it. Each card has
+      <b>♫ WAV</b> (export that theme as audio), <b>⬇ JSON</b> (download its tiny recipe file),
+      and <b>✕</b> (delete). Saves are stored on this device.</p>
+      <p><b>Save vs Copy recipe vs ⬇ JSON:</b> Save keeps a theme in your list here. Copy recipe
+      and ⬇ JSON both give you the recipe as text/file — for backup, or to share: anyone who
+      Imports your recipe hears <i>exactly</i> the music you heard, because recipes are
+      deterministic.</p>
+      <p><b>⬇ themes.json (all)</b> downloads every theme (stock + yours) as one file.
+      <b>Import JSON</b> reads recipe files back in — it accepts theme recipes, Remix-Lab FX
+      presets, and Score Composer scores, even mixed in one file, and sorts each to the right
+      place.</p>
+      <p><b>↗ Share</b> on any saved card posts your creation to the community gallery (a GitHub
+      discussion board) where others can download it, leave comments, and react with 👍 ❤️ 😄.
+      To try someone else's creation from the gallery: copy the JSON from their post into a file
+      and use <b>Import JSON</b>.</p>
+      <p>The <b>Remix Lab</b> and <b>Score Composer</b> pages have their own guides just like this
+      one — look for the 🎚 and 🎼 panels there.</p>
     </div>
   </details>
 
   <div class="forge">
-    <h2>The Forge</h2>
+    <h2>Theme Forge</h2>
     <div class="hint">Build a new theme from the same ingredients as the 38 stock tracks.
     Same recipe + same seed = the exact same music, always. Roll the dice for a new melody in the same style.</div>
     <div class="fgrid">
@@ -305,7 +394,26 @@
       <textarea id="f-json" readonly aria-label="Recipe JSON"></textarea>
     </div>
   </div>
-  <div class="forge">
+  
+
+  <div id="customs"></div>
+
+  <div id="lists"></div>
+
+  
+  <div class="foot">
+    <b>How it works:</b> every theme is a tiny recipe — instrument, key, mode, tempo,
+    progression, rhythm styles and a seed. A seeded generator composes the melody, so the
+    same recipe always produces the identical piece of music. Roll 🎲 for new melodies in the
+    same style; Save the keepers; export WAVs or share recipe JSON.<br>
+    Loops: 2-bar intro + 8/12-bar body (action drums add a battle intro). Single HTML file, no libraries.<br>
+    <b>iPhone:</b> ring/silent switch must be ON or iOS mutes web audio.
+  </div>
+  </div>
+  <div id="view-remix" class="view" hidden>
+  <div class="vnav"><button class="fbtn" data-home>‹ Home</button><span>Remix Lab</span></div>
+  <div class="statusline"></div>
+<div class="forge">
     <h2>Remix Lab</h2>
     <div class="hint"><b style="color:var(--ink)">Two ways to load audio:</b> attach a file from your
     device, or paste a <b style="color:var(--ink)">direct link to an audio file</b> (a URL ending in
@@ -389,6 +497,23 @@
           (this one restarts playback).</p>
           <p>Found a sound you love? Name it and <b>Save FX preset</b> below — it'll be waiting
           next time. Export WAV bakes your exact settings into an audio file.</p>
+          <p><b>Everything else on this page:</b></p>
+          <p><b>After loading a track</b> you'll see its length plus an <i>estimated</i> key and
+          tempo. Estimates are usually right on instrumental music but can miss on drum-heavy or
+          free-tempo tracks — trust your ears.</p>
+          <p><b>Send key+tempo to Forge</b> jumps to the Theme Forge page with the key, mood
+          (major/minor) and tempo pre-filled — so you can compose an <i>original</i> theme that
+          fits alongside the track you loaded. Inspired by it, never copied from it.</p>
+          <p><b>Presets</b> (the dropdown) are starting points that set the sliders — everything
+          stays yours to reshape afterward. Combos to try: Speed down + Reverb up = dreamy;
+          Bit crush + High cut = retro handheld; both filters toward the middle = old radio;
+          Echo repeats high = dub tails.</p>
+          <p><b>Your remix presets</b> (below the Lab, after your first save): tap a card to snap
+          all sliders to those settings — even while music plays. <b>⬇ JSON</b> downloads a preset
+          to share or back up; the <b>Import JSON</b> button on the Theme Forge page reads them
+          back in. <b>✕</b> deletes.</p>
+          <p><b>Loop</b> is on by default so the track keeps going while you experiment —
+          that's the fastest way to learn what every slider does.</p>
         </div>
       </details>
       <div class="fld fname"><label>Save these FX settings as a preset</label>
@@ -404,19 +529,154 @@
     </div>
   </div>
   <div id="fx-list"></div>
+  <div class="foot"><b>iPhone:</b> ring/silent switch must be ON or iOS mutes web audio.</div>
 
-  <div id="customs"></div>
-
-  <div id="lists"></div>
-
-  <div class="foot">
-    <b>How it works:</b> every theme is a tiny recipe — instrument, key, mode, tempo,
-    progression, rhythm styles and a seed. A seeded generator composes the melody, so the
-    same recipe always produces the identical piece of music. Roll 🎲 for new melodies in the
-    same style; Save the keepers; export WAVs or share recipe JSON.<br>
-    Loops: 2-bar intro + 8/12-bar body (action drums add a battle intro). Single HTML file, no libraries.<br>
-    <b>iPhone:</b> ring/silent switch must be ON or iOS mutes web audio.
   </div>
+  <div id="view-score" class="view" hidden>
+
+  <div class="vnav"><button class="fbtn" data-home>‹ Home</button><span>Score Composer</span></div>
+  <div class="statusline"></div>
+  <details class="guide" style="margin-bottom:14px">
+      <summary>🎼 How to use the Score Composer</summary>
+      <div class="gbody">
+        <p><b>Adding notes:</b> pick a duration (the note buttons run whole → sixteenth; ♩ is a quarter note), pick an octave, then tap a
+        piano key — the note appears on the staff and plays instantly. The ♯/♭ toggle decides how
+        the black keys are spelled (C♯ vs D♭ — same sound, different notation). Every note shows its <b>letter name underneath</b> —
+        chords stack their letters, lowest at the bottom — so the staff doubles as a
+        learn-to-read-music aid.</p>
+        <p><b>Editing:</b> tap any note on the staff to select it (it turns gold). While selected,
+        piano keys <i>replace</i> its pitch, duration buttons <i>replace</i> its length, a rest icon turns it into silence, and ◀ ▶ move the selection. Tap Done (or empty staff space) to go back to
+        adding notes at the end.</p>
+        <p><b>Chords:</b> turn on <b>Chord</b>, then tap extra piano keys — they stack onto the
+        last note (or the selected one) instead of adding new notes. Tapping a key already in the
+        chord removes it again. Up to five pitches per chord.</p>
+        <p><b>Rests</b> (the icon row) insert silence — each icon is a rest length, from whole to sixteenth; the dot applies to them too. Use rests for breathing room.
+        <b>· dot</b> makes the next note half again as long (a dotted quarter = 1½ beats).
+        <b>↩ Undo</b> steps back through your recent edits.</p>
+        <p>The <b>length readout</b> above the staff updates live — total time at the current
+        tempo, measures, and note count — so you always know how long your piece runs.
+        With a note selected, <b>▶ From here</b> plays from that point instead of the top.</p>
+        <p><b>Time signature</b> controls where the barlines fall (4/4 = four quarter-note beats per
+        measure; 6/8 = six eighth-notes). <b>Clef</b> moves the pitch range: treble for melodies,
+        bass for low parts.</p>
+        <p><b>Instrument</b> changes who performs your notes — the same score sounds completely
+        different on harp vs organ vs chip square, so try a few. <b>Tempo</b> is the speed in
+        beats per minute; the length readout recalculates instantly when you change it, so you can
+        compose to a target time ("I need a 30-second jingle").</p>
+        <p><b>Play</b> performs the score with your chosen instrument, follows along on the staff
+        with a green highlight, and turns the page for you automatically. Sheets hold four lines
+        each — use <b>‹ Prev / Next ›</b> under the staff to flip between pages (on a computer,
+        two pages sit side by side like an open book). <b>Export WAV</b>
+        renders it to a real audio file, and <b>🖼 Save sheet</b> downloads the notation itself
+        as a PNG image — with your title on top — ready to print or share. <b>Save</b> keeps it in <b>Your scores</b> below —
+        stored on this device.</p>
+        <p><b>Your scores</b> cards show the instrument, note count and length. Tap one to load it
+        back into the editor and keep working; <b>⬇ JSON</b> downloads it as a small file you can
+        share — anyone can bring it in through <b>Import JSON</b> on the Theme Forge page and get
+        your exact score, editable. <b>✕</b> deletes.</p>
+        <p><b>If something sounds wrong:</b> tap the note, check its octave (a right melody in the
+        wrong octave sounds off), or ↩ Undo your way back. There's no wrong way to use this —
+        the fastest way to learn is to add five random notes and press Play.</p>
+      </div>
+    </details>
+
+  <div class="forge">
+    <h2>Score settings</h2>
+    <div class="fgrid">
+      <div class="fld"><label>Clef</label><select id="sc-clef">
+        <option value="treble">𝄞 Treble</option><option value="bass">𝄢 Bass</option></select></div>
+      <div class="fld"><label>Time signature</label>
+        <div style="display:flex;gap:6px">
+          <select id="sc-num" style="flex:1"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>9</option><option>12</option></select>
+          <select id="sc-den" style="flex:1"><option>2</option><option selected>4</option><option>8</option></select>
+        </div></div>
+      <div class="fld"><label>Instrument</label><select id="sc-lead">
+        <option value="piano" selected>Piano</option><option value="epiano">E-Piano</option>
+        <option value="organ">Organ</option><option value="guitar">Guitar</option>
+        <option value="harp">Harp</option><option value="marimba">Marimba</option>
+        <option value="bell">Bell</option><option value="brass">Brass</option>
+        <option value="strings">Strings</option><option value="sawlead">Saw lead</option>
+        <option value="square">Chip square</option><option value="fm">Flute</option>
+      </select></div>
+      <div class="fld"><label>Tempo (BPM)</label>
+        <input type="number" id="sc-bpm" value="100" min="40" max="220"></div>
+    </div>
+  </div>
+
+  <div id="sc-len" class="sclen"></div>
+  <div class="staffwrap" id="staffwrap"></div>
+  <div class="pager" id="pager">
+    <button class="fbtn" id="pg-prev">‹ Prev</button>
+    <span id="pg-info"></span>
+    <button class="fbtn" id="pg-next">Next ›</button>
+  </div>
+
+  <div class="seltools" id="seltools">
+    <button class="fbtn" id="sc-prev">◀</button>
+    <button class="fbtn" id="sc-next">▶</button>
+    <button class="fbtn" id="sc-playfrom">▶ From here</button>
+    <button class="fbtn" id="sc-del" style="color:var(--err)">Delete note</button>
+    <button class="fbtn teal" id="sc-done">Done editing</button>
+  </div>
+
+  <div class="durrow" aria-label="note durations">
+    <button class="durbtn" data-d="4" aria-label="whole note"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><ellipse cx="13" cy="15" rx="7" ry="5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button>
+    <button class="durbtn" data-d="2" aria-label="half note"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><ellipse cx="10" cy="20" rx="6" ry="4.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="20" x2="16" y2="3" stroke="currentColor" stroke-width="2"/></svg></button>
+    <button class="durbtn on" data-d="1" aria-label="quarter note"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><ellipse cx="10" cy="20" rx="6" ry="4.5" fill="currentColor"/><line x1="16" y1="20" x2="16" y2="3" stroke="currentColor" stroke-width="2"/></svg></button>
+    <button class="durbtn" data-d="0.5" aria-label="eighth note"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><ellipse cx="9" cy="21" rx="5.5" ry="4.2" fill="currentColor"/><line x1="14.5" y1="21" x2="14.5" y2="3" stroke="currentColor" stroke-width="2"/><path d="M14.5 3 q8 4 6 12" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+    <button class="durbtn" data-d="0.25" aria-label="sixteenth note"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><ellipse cx="9" cy="21" rx="5.5" ry="4.2" fill="currentColor"/><line x1="14.5" y1="21" x2="14.5" y2="3" stroke="currentColor" stroke-width="2"/><path d="M14.5 3 q8 4 6 12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14.5 9 q8 4 6 12" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+    <button class="durbtn small" id="sc-dot" aria-label="dotted">·&nbsp;dot</button>
+  </div>
+  <div class="durrow" aria-label="rests">
+    <span class="durlabel">REST</span>
+    <button class="durbtn rst" data-r="4" aria-label="whole rest"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><line x1="4" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="10" width="10" height="5" fill="currentColor"/></svg></button>
+    <button class="durbtn rst" data-r="2" aria-label="half rest"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><line x1="4" y1="17" x2="22" y2="17" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="12" width="10" height="5" fill="currentColor"/></svg></button>
+    <button class="durbtn rst" data-r="1" aria-label="quarter rest"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><path d="M11 4 L17 11 Q11 15 16 20 Q8 21 12 27" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></button>
+    <button class="durbtn rst" data-r="0.5" aria-label="eighth rest"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><circle cx="8.5" cy="10" r="2.6" fill="currentColor"/><path d="M9.5 12 Q14 14 17 9 L12.5 25" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+    <button class="durbtn rst" data-r="0.25" aria-label="sixteenth rest"><svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><circle cx="9" cy="8" r="2.4" fill="currentColor"/><circle cx="7.5" cy="14.5" r="2.4" fill="currentColor"/><path d="M10 10 Q14 12 17.5 7 L11 26 M8.5 16.5 Q12.5 18.5 15.5 14" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+  </div>
+  <div class="durrow">
+    <button class="durbtn small" id="sc-chord">Chord</button>
+    <button class="durbtn small" id="sc-undo">↩ Undo</button>
+    <button class="durbtn small on" id="sc-sharp" aria-label="prefer sharps">♯</button>
+    <button class="durbtn small" id="sc-flat" aria-label="prefer flats">♭</button>
+    <label style="font-size:10px;color:var(--dim);letter-spacing:.1em">OCTAVE</label>
+    <select id="sc-oct"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+  </div>
+
+  <div class="piano" id="piano">
+    <button class="wkey" data-k="C">C</button><button class="wkey" data-k="D">D</button>
+    <button class="wkey" data-k="E">E</button><button class="wkey" data-k="F">F</button>
+    <button class="wkey" data-k="G">G</button><button class="wkey" data-k="A">A</button>
+    <button class="wkey" data-k="B">B</button>
+    <button class="bkey" data-i="0" style="left:calc(1*100%/7 - 4.75%)">C♯</button>
+    <button class="bkey" data-i="1" style="left:calc(2*100%/7 - 4.75%)">D♯</button>
+    <button class="bkey" data-i="2" style="left:calc(4*100%/7 - 4.75%)">F♯</button>
+    <button class="bkey" data-i="3" style="left:calc(5*100%/7 - 4.75%)">G♯</button>
+    <button class="bkey" data-i="4" style="left:calc(6*100%/7 - 4.75%)">A♯</button>
+  </div>
+
+  <div class="forge">
+    <div class="fgrid">
+      <div class="fld fname"><label>Score name</label>
+        <input type="text" id="sc-name" placeholder="e.g. Hero's lament" maxlength="48"></div>
+      <div class="frow">
+        <button class="fbtn gold" id="sc-play">Play</button>
+        <button class="fbtn teal" id="sc-export">Export WAV</button>
+        <button class="fbtn" id="sc-sheet">🖼 Save sheet</button>
+        <button class="fbtn" id="sc-save">Save score</button>
+        <button class="fbtn" id="sc-clear">Clear</button>
+      </div>
+    </div>
+    
+  </div>
+  <div id="score-list"></div>
+  <div class="foot"><b>iPhone:</b> ring/silent switch must be ON or iOS mutes web audio.</div>
+
+
+  </div>
+
+  
 </div>
 
 <script>
@@ -1012,6 +1272,18 @@ function scheduleTrack(env, tr, t0){
 
 let liveEnv = null, curId = "E1", nextT = 0, loopTimer = null, playing = false;
 
+/* storage: window.storage (Claude artifacts) -> localStorage (hosted site) */
+async function kvGet(key){
+  try { if (window.storage){ const r = await window.storage.get(key); return r && r.value; } } catch(e){}
+  try { return localStorage.getItem(key); } catch(e){}
+  return null;
+}
+async function kvSet(key, val){
+  try { if (window.storage){ await window.storage.set(key, val); return true; } } catch(e){}
+  try { localStorage.setItem(key, val); return true; } catch(e){}
+  return false;
+}
+
 let CUSTOMS = [];
 function trackById(id){
   if (id === "FORGE") return forgeTrack();
@@ -1152,9 +1424,10 @@ function setNow(){
   nowEl.innerHTML = "<b>" + tr.id + "</b> — " + tr.name + '<br><span class="meta">' + info + "</span>";
 }
 function setStatus(err, msg){
-  if (err){ statusEl.innerHTML = '<span class="err">' + err + '</span>'; return; }
-  if (msg){ statusEl.innerHTML = msg; return; }
-  statusEl.innerHTML = playing ? "<b>Playing</b>" : "Stopped";
+  const html = err ? '<span class="err">' + err + '</span>'
+             : msg ? msg
+             : (playing ? "<b>Playing</b>" : "Stopped");
+  document.querySelectorAll(".statusline").forEach(el => el.innerHTML = html);
   playBtn.textContent = playing ? "Stop" : "Play";
 }
 
@@ -1259,20 +1532,10 @@ $("f-copy").addEventListener("click", () => {
 });
 
 async function loadCustoms(){
-  try {
-    if (window.storage){
-      const r = await window.storage.get("theme-forge-saves");
-      if (r && r.value) CUSTOMS = JSON.parse(r.value);
-    }
-  } catch (e){ /* no saved themes yet */ }
+  try { const v = await kvGet("theme-forge-saves"); if (v) CUSTOMS = JSON.parse(v); } catch (e){}
   renderCustoms();
 }
-async function persistCustoms(){
-  try {
-    if (window.storage)
-      await window.storage.set("theme-forge-saves", JSON.stringify(CUSTOMS));
-  } catch (e){ /* storage unavailable outside Claude — session-only */ }
-}
+async function persistCustoms(){ await kvSet("theme-forge-saves", JSON.stringify(CUSTOMS)); }
 
 $("f-save").addEventListener("click", async () => {
   const t = forgeTrack();
@@ -1280,9 +1543,7 @@ $("f-save").addEventListener("click", async () => {
   CUSTOMS.push(t);
   await persistCustoms();
   renderCustoms();
-  setStatus(null, "Saved as " + t.id + ". " +
-    (window.storage ? "It persists across sessions here." :
-     "Storage unavailable outside Claude — use Copy recipe to keep it permanently."));
+  setStatus(null, "Saved as " + t.id + " — stored on this device. Use Copy recipe or its ⬇ JSON to share it.");
 });
 
 const customsEl = document.getElementById("customs");
@@ -1320,6 +1581,7 @@ function renderCustoms(){
       x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
       return x;
     }
+    acts.appendChild(mini("↗", "Share", () => galleryShare("Theme", tr)));
     acts.appendChild(mini("♫ WAV", "Export WAV of", () => {
       curId = tr.id;
       document.querySelectorAll(".trk").forEach(x =>
@@ -1353,6 +1615,8 @@ function downloadBlob(name, blob){
   setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
 }
 function downloadJSON(name, obj){
+  if (obj && !Array.isArray(obj))
+    obj = Object.assign({}, obj, { _made_with: "Musical Forge Studio — " + location.href });
   downloadBlob(name, new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }));
 }
 
@@ -1374,10 +1638,14 @@ $("f-file").addEventListener("change", (ev) => {
       if (!Array.isArray(arr)) arr = [arr];
       const haveThemes = new Set(TRACKS.concat(CUSTOMS).map(t => t.id));
       const haveFx = new Set(FX_SAVES.map(f => f.id));
-      let themes = 0, fx = 0, skipped = 0;
+      const haveSc = new Set(SCORES.map(sc => sc.id));
+      let themes = 0, fx = 0, scores = 0, skipped = 0;
       arr.forEach(t => {
         if (!t || !t.id){ skipped++; return; }
-        if (t.params && t.name && !t.mode){          // FX preset shape
+        if (t.kind === "score" && Array.isArray(t.notes)){   // score shape
+          if (haveSc.has(t.id)){ skipped++; return; }
+          SCORES.push(t); haveSc.add(t.id); scores++;
+        } else if (t.params && t.name && !t.mode){          // FX preset shape
           if (haveFx.has(t.id)){ skipped++; return; }
           FX_SAVES.push(t); haveFx.add(t.id); fx++;
         } else if (t.mode && t.prog){                 // theme recipe shape
@@ -1388,9 +1656,11 @@ $("f-file").addEventListener("change", (ev) => {
       });
       if (themes){ await persistCustoms(); renderCustoms(); }
       if (fx){ await persistFxSaves(); renderFxSaves(); }
+      if (scores){ await persistScores(); renderScores(); }
       const parts = [];
       if (themes) parts.push(themes + " theme(s)");
       if (fx) parts.push(fx + " FX preset(s)");
+      if (scores) parts.push(scores + " score(s)");
       setStatus(null, parts.length
         ? "Imported " + parts.join(" and ") + (skipped ? " (" + skipped + " skipped: duplicates or unrecognized)" : "") + "."
         : "Nothing imported — that file didn't contain theme recipes or FX presets.");
@@ -1806,20 +2076,10 @@ $("r-export").addEventListener("click", async () => {
 
 let FX_SAVES = [];
 async function loadFxSaves(){
-  try {
-    if (window.storage){
-      const r = await window.storage.get("theme-forge-fx-presets");
-      if (r && r.value) FX_SAVES = JSON.parse(r.value);
-    }
-  } catch (e){ /* none yet */ }
+  try { const v = await kvGet("theme-forge-fx-presets"); if (v) FX_SAVES = JSON.parse(v); } catch (e){}
   renderFxSaves();
 }
-async function persistFxSaves(){
-  try {
-    if (window.storage)
-      await window.storage.set("theme-forge-fx-presets", JSON.stringify(FX_SAVES));
-  } catch (e){ /* session-only outside Claude */ }
-}
+async function persistFxSaves(){ await kvSet("theme-forge-fx-presets", JSON.stringify(FX_SAVES)); }
 
 $("fx-save").addEventListener("click", async () => {
   const entry = {
@@ -1831,9 +2091,7 @@ $("fx-save").addEventListener("click", async () => {
   await persistFxSaves();
   renderFxSaves();
   $("fx-name").value = "";
-  setStatus(null, "FX preset saved" +
-    (window.storage ? " — it persists across sessions here." :
-     " for this session. Storage is unavailable outside Claude — use its ⬇ JSON to keep it — the Import button accepts it back anytime."));
+  setStatus(null, "FX preset saved — stored on this device.");
 });
 
 const fxListEl = document.getElementById("fx-list");
@@ -1878,6 +2136,7 @@ function renderFxSaves(){
       x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
       return x;
     }
+    acts.appendChild(mini("↗", "Share", () => galleryShare("FX preset", fx)));
     acts.appendChild(mini("⬇ JSON", "Download", () =>
       downloadJSON("fx_" + fx.id + ".json", fx)));
     acts.appendChild(mini("✕", "Delete", async () => {
@@ -1891,6 +2150,695 @@ function renderFxSaves(){
   fxListEl.appendChild(grid);
 }
 loadFxSaves();
+
+/* ============================================================
+   SCORE COMPOSER
+   ============================================================ */
+
+const LETTER_STEP = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+const LETTER_SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+const BLACK_PAIRS = [["C","D"],["D","E"],["F","G"],["G","A"],["A","B"]];
+const SC_GAP = 9, SC_TOP = 44, SC_LEFT = 72, SC_SP = 30;
+
+function noteMidi(n){
+  return (n.oct + 1) * 12 + LETTER_SEMI[n.letter] +
+         (n.acc === "#" ? 1 : n.acc === "b" ? -1 : 0);
+}
+function noteDiatonic(n){ return n.oct * 7 + LETTER_STEP[n.letter]; }
+function clefBase(clef){ return clef === "treble" ? 30 : 18; } // bottom line: E4 / G2
+function measureQuarters(num, den){ return num * (4 / den); }
+function baseOf(d){
+  for (const b of [4, 2, 1, 0.5, 0.25]){
+    if (Math.abs(d - b) < 1e-9) return { b, dot: false };
+    if (Math.abs(d - b * 1.5) < 1e-9) return { b, dot: true };
+  }
+  return { b: 1, dot: false };
+}
+/* events hold multiple pitches (chords); old single-pitch saves normalize on load */
+function normNote(n){
+  if (n.rest) return { rest: true, d: n.d };
+  if (n.pitches) return n;
+  return { d: n.d, pitches: [{ letter: n.letter, acc: n.acc || "", oct: n.oct }] };
+}
+
+let SCORE = { name:"", clef:"treble", num:4, den:4, bpm:100, lead:"piano", notes:[] };
+let selIdx = -1, curDur = 1, curDot = false, accPref = "#", chordMode = false;
+let scorePlaying = false, scoreTimers = [], scoreOut = null, previewEnv = null;
+let SCORES = [], HISTORY = [];
+
+function pushHistory(){
+  HISTORY.push(JSON.stringify(SCORE.notes));
+  if (HISTORY.length > 60) HISTORY.shift();
+}
+
+/* ---- length readout ---- */
+function updateLength(){
+  const totalQ = SCORE.notes.reduce((a, n) => a + n.d, 0);
+  const secs = totalQ * 60 / SCORE.bpm;
+  const mq = measureQuarters(SCORE.num, SCORE.den);
+  const meas = totalQ ? Math.ceil(totalQ / mq - 1e-9) : 0;
+  const mm = Math.floor(secs / 60), ss = secs % 60;
+  $("sc-len").textContent = SCORE.notes.length
+    ? "Length: " + mm + ":" + (ss < 10 ? "0" : "") + ss.toFixed(1) +
+      " · " + meas + (meas === 1 ? " measure" : " measures") +
+      " · " + SCORE.notes.length + (SCORE.notes.length === 1 ? " note/chord" : " notes/chords") +
+      " · " + SCORE.bpm + " BPM"
+    : "Length: 0:00.0 — empty score";
+}
+
+/* ---- staff rendering (SVG, chord-aware, wraps into rows of measures) ---- */
+function drawRest(nx, lineTop, d, col){
+  const b = baseOf(d).b, mid = lineTop + SC_GAP * 2;
+  if (b >= 4) return '<rect class="nh" x="' + (nx - 5.5) + '" y="' + (lineTop + SC_GAP) + '" width="11" height="4.5" fill="' + col + '"/>';
+  if (b >= 2) return '<rect class="nh" x="' + (nx - 5.5) + '" y="' + (lineTop + 2 * SC_GAP - 4.5) + '" width="11" height="4.5" fill="' + col + '"/>';
+  if (b >= 1) return '<path class="nh" d="M' + (nx - 2) + ' ' + (lineTop + 4) + ' L' + (nx + 4) + ' ' + (lineTop + 12) +
+    ' Q' + (nx - 2) + ' ' + (lineTop + 17) + ' ' + (nx + 3) + ' ' + (lineTop + 22) +
+    ' Q' + (nx - 5) + ' ' + (lineTop + 23) + ' ' + (nx - 1) + ' ' + (lineTop + 31) +
+    '" fill="none" stroke="' + col + '" stroke-width="2.2"/>';
+  if (b >= 0.5) return '<g class="nh"><circle cx="' + (nx - 4) + '" cy="' + (mid - 5) + '" r="2.2" fill="' + col + '"/>' +
+    '<path d="M' + (nx - 3) + ' ' + (mid - 3.5) + ' Q' + (nx + 1) + ' ' + (mid - 1.5) + ' ' + (nx + 5) + ' ' + (mid - 6) +
+    ' L' + (nx) + ' ' + (mid + 12) + '" fill="none" stroke="' + col + '" stroke-width="1.8"/></g>';
+  return '<g class="nh"><circle cx="' + (nx - 3.5) + '" cy="' + (mid - 7) + '" r="2" fill="' + col + '"/>' +
+    '<circle cx="' + (nx - 5) + '" cy="' + (mid - 1) + '" r="2" fill="' + col + '"/>' +
+    '<path d="M' + (nx - 2.5) + ' ' + (mid - 5.5) + ' Q' + (nx + 1) + ' ' + (mid - 3.5) + ' ' + (nx + 5) + ' ' + (mid - 8) +
+    ' L' + (nx - 1) + ' ' + (mid + 13) + ' M' + (nx - 4) + ' ' + (mid + 0.5) + ' Q' + (nx - 0.5) + ' ' + (mid + 2.5) + ' ' + (nx + 3) + ' ' + (mid - 1) +
+    '" fill="none" stroke="' + col + '" stroke-width="1.8"/></g>';
+}
+const PAGE_ROWS = 4;
+let scPage = 0;
+let LAYOUT = { rows: [], barAfter: [], availW: 340, book: false };
+
+function isBook(){ return window.innerWidth >= 1100; }
+
+function computeRows(){
+  const mq = measureQuarters(SCORE.num, SCORE.den);
+  const measures = [[]];
+  const barAfter = [];
+  let cumM = 0;
+  SCORE.notes.forEach((nt, gi) => {
+    measures[measures.length - 1].push(gi);
+    cumM += nt.d;
+    let ended = false;
+    while (cumM >= mq - 1e-6){ cumM -= mq; ended = true; }
+    if (Math.abs(cumM) < 1e-6) cumM = 0;
+    barAfter[gi] = ended;
+    if (ended && gi < SCORE.notes.length - 1) measures.push([]);
+  });
+  const wrapEl = $("staffwrap");
+  const wrapW = (wrapEl && wrapEl.clientWidth) || 360;
+  const book = isBook();
+  const availW = Math.max(300, book ? (wrapW - 20) / 2 : wrapW - 4);
+  const rows = [];
+  let cur = [];
+  measures.forEach(mIdxs => {
+    if (!mIdxs.length) return;
+    const lm = rows.length === 0 ? 72 : 50;
+    const fits = lm + (cur.length + mIdxs.length) * SC_SP + 26 <= availW;
+    if (cur.length && !fits){ rows.push(cur); cur = []; }
+    cur = cur.concat(mIdxs);
+  });
+  if (cur.length || !rows.length) rows.push(cur);
+  LAYOUT = { rows, barAfter, availW, book };
+}
+function totalPages(){ return Math.max(1, Math.ceil(LAYOUT.rows.length / PAGE_ROWS)); }
+function pageOfIdx(gi){
+  for (let r = 0; r < LAYOUT.rows.length; r++)
+    if (LAYOUT.rows[r].indexOf(gi) >= 0) return Math.floor(r / PAGE_ROWS);
+  return 0;
+}
+
+/* draw a set of rows; globalRowStart controls first-row extras (time sig, wider margin) */
+function buildRowsMarkup(rowList, globalRowStart, availW, uniformHeight){
+  const GAP = SC_GAP, ROWH = 140, TOPPAD = 40;
+  const base = clefBase(SCORE.clef);
+  const rowsDrawn = Math.max(1, rowList.length);
+  const height = TOPPAD + (uniformHeight ? PAGE_ROWS : rowsDrawn) * ROWH;
+  let out = "";
+
+  rowList.forEach((rowIdxs, rl) => {
+    const gRow = globalRowStart + rl;
+    const lineTop = TOPPAD + rl * ROWH;
+    const bottom = lineTop + 4 * GAP;
+    const leftM = gRow === 0 ? 72 : 50;
+    const sp = Math.min(SC_SP,
+      Math.max(18, (availW - leftM - 26) / Math.max(1, rowIdxs.length)));
+
+    for (let i = 0; i < 5; i++)
+      out += '<line x1="4" x2="' + (availW - 4) + '" y1="' + (lineTop + i * GAP) +
+             '" y2="' + (lineTop + i * GAP) + '" stroke="#4a4436" stroke-width="1"/>';
+    out += SCORE.clef === "treble"
+      ? '<text x="6" y="' + (bottom + 4) + '" font-size="54" fill="#2a2620">𝄞</text>'
+      : '<text x="8" y="' + (lineTop + GAP * 2.6) + '" font-size="36" fill="#2a2620">𝄢</text>';
+    if (gRow === 0){
+      out += '<text x="48" y="' + (lineTop + GAP * 1.7) + '" font-size="17" font-weight="bold" fill="#2a2620" text-anchor="middle">' + SCORE.num + '</text>';
+      out += '<text x="48" y="' + (lineTop + GAP * 3.8) + '" font-size="17" font-weight="bold" fill="#2a2620" text-anchor="middle">' + SCORE.den + '</text>';
+    }
+
+    rowIdxs.forEach((gi, ci) => {
+      const nt = SCORE.notes[gi];
+      const x = leftM + ci * sp + sp / 2;
+      const sel = gi === selIdx;
+      const col = sel ? "#b8860b" : "#2a2620";
+      out += '<g data-idx="' + gi + '">';
+      out += '<rect x="' + (x - sp / 2) + '" y="' + (lineTop - 36) + '" width="' + sp +
+             '" height="' + (ROWH - 8) + '" fill="' + (sel ? "rgba(184,134,11,0.14)" : "transparent") + '"/>';
+      if (nt.rest){
+        out += drawRest(x, lineTop, nt.d, col);
+        if (baseOf(nt.d).dot)
+          out += '<circle cx="' + (x + 10) + '" cy="' + (lineTop + 2 * GAP - 2) + '" r="1.9" fill="' + col + '"/>';
+      } else {
+        const ps = nt.pitches.map(pp => ({ pp, pos: noteDiatonic(pp) - base }))
+                             .sort((a, b) => a.pos - b.pos);
+        const minPos = ps[0].pos, maxPos = ps[ps.length - 1].pos;
+        const avg = ps.reduce((a, o) => a + o.pos, 0) / ps.length;
+        const up = avg < 4;
+        for (let pp = -2; pp >= minPos; pp -= 2){
+          const ly = bottom - pp * GAP / 2;
+          out += '<line x1="' + (x - 10) + '" x2="' + (x + 10) + '" y1="' + ly + '" y2="' + ly + '" stroke="#4a4436"/>';
+        }
+        for (let pp = 10; pp <= maxPos; pp += 2){
+          const ly = bottom - pp * GAP / 2;
+          out += '<line x1="' + (x - 10) + '" x2="' + (x + 10) + '" y1="' + ly + '" y2="' + ly + '" stroke="#4a4436"/>';
+        }
+        const bd = baseOf(nt.d);
+        const hollow = bd.b >= 2;
+        let prevPos = null, prevOff = false, accK = 0;
+        const heads = ps.map(o => {
+          let off = false;
+          if (prevPos !== null && o.pos - prevPos === 1 && !prevOff) off = true;
+          prevPos = o.pos; prevOff = off;
+          return { pos: o.pos, pp: o.pp, off };
+        });
+        heads.forEach(h => {
+          const y = bottom - h.pos * GAP / 2;
+          const hx = x + (h.off ? (up ? 9.4 : -9.4) : 0);
+          if (h.pp.acc){
+            out += '<text x="' + (x - 14 - accK * 9) + '" y="' + (y + 4.5) +
+                   '" font-size="14" fill="' + col + '" text-anchor="middle">' +
+                   (h.pp.acc === "#" ? "♯" : "♭") + '</text>';
+            accK++;
+          }
+          out += '<ellipse class="nh" cx="' + hx + '" cy="' + y +
+                 '" rx="5.4" ry="4" transform="rotate(-14 ' + hx + ' ' + y + ')" fill="' +
+                 (hollow ? "none" : col) + '" stroke="' + col + '" stroke-width="1.4"/>';
+          if (bd.dot)
+            out += '<circle cx="' + (hx + 10.5) + '" cy="' + (y - 2) + '" r="1.9" fill="' + col + '"/>';
+        });
+        if (bd.b < 4){
+          const sx = up ? x + 5 : x - 5;
+          const yLow = bottom - minPos * GAP / 2;
+          const yHigh = bottom - maxPos * GAP / 2;
+          const sy = up ? yHigh - GAP * 3.2 : yLow + GAP * 3.2;
+          const yStart = up ? yLow : yHigh;
+          out += '<line x1="' + sx + '" x2="' + sx + '" y1="' + yStart + '" y2="' + sy +
+                 '" stroke="' + col + '" stroke-width="1.3"/>';
+          const flags = bd.b === 0.5 ? 1 : bd.b === 0.25 ? 2 : 0;
+          for (let f = 0; f < flags; f++){
+            const fy = sy + (up ? f * 6 : -f * 6);
+            out += '<path d="M' + sx + ' ' + fy + ' q 9 ' + (up ? 5 : -5) + ' 5 ' + (up ? 14 : -14) +
+                   '" stroke="' + col + '" stroke-width="1.3" fill="none"/>';
+          }
+        }
+        // letter names sit below the lowest thing drawn (deep ledger notes included)
+        const lyBase = Math.max(bottom + 30, bottom - minPos * GAP / 2 + 16);
+        ps.forEach((o, k) => {
+          const ly = lyBase + (ps.length - 1 - k) * 8.5;
+          out += '<text x="' + x + '" y="' + ly +
+                 '" font-size="9.5" font-family="Menlo, Consolas, monospace" fill="' +
+                 (sel ? "#b8860b" : "#6b6350") + '" text-anchor="middle">' +
+                 o.pp.letter + (o.pp.acc === "#" ? "♯" : o.pp.acc === "b" ? "♭" : "") + '</text>';
+        });
+      }
+      out += "</g>";
+      if (LAYOUT.barAfter[gi] && ci < rowIdxs.length - 1)
+        out += '<line x1="' + (x + sp / 2) + '" x2="' + (x + sp / 2) +
+               '" y1="' + lineTop + '" y2="' + bottom + '" stroke="#4a4436" stroke-width="1.2"/>';
+    });
+    if (rowIdxs.length){
+      const xEnd = (gRow === 0 ? 72 : 50) + rowIdxs.length * sp;
+      out += '<line x1="' + Math.min(xEnd, availW - 4) + '" x2="' + Math.min(xEnd, availW - 4) +
+             '" y1="' + lineTop + '" y2="' + bottom + '" stroke="#4a4436" stroke-width="1.2"/>';
+    }
+  });
+
+  if (!SCORE.notes.length && globalRowStart === 0)
+    out += '<text x="80" y="' + (TOPPAD + SC_GAP * 2.4) +
+           '" font-size="11" fill="#8a8270">tap a piano key below to add your first note…</text>';
+
+  return { inner: out, height };
+}
+
+function renderStaff(){
+  computeRows();
+  const tp = totalPages();
+  if (scPage > tp - 1) scPage = tp - 1;
+  if (scPage < 0) scPage = 0;
+  const book = LAYOUT.book;
+  let pages;
+  if (book){
+    const left = scPage - (scPage % 2);
+    pages = [left, left + 1].filter(pg => pg < tp);
+  } else pages = [scPage];
+
+  const wrap = $("staffwrap");
+  wrap.classList.toggle("book", book && pages.length === 2);
+  wrap.innerHTML = pages.map(pg => {
+    const rowsSub = LAYOUT.rows.slice(pg * PAGE_ROWS, (pg + 1) * PAGE_ROWS);
+    const bm = buildRowsMarkup(rowsSub, pg * PAGE_ROWS, LAYOUT.availW, tp > 1);
+    return '<div class="page"><svg width="' + LAYOUT.availW + '" height="' + bm.height +
+           '" viewBox="0 0 ' + LAYOUT.availW + ' ' + bm.height + '">' + bm.inner + '</svg></div>';
+  }).join("");
+
+  const pager = $("pager");
+  pager.style.display = tp > 1 ? "flex" : "none";
+  $("pg-info").textContent = (book && pages.length === 2)
+    ? "Pages " + (pages[0] + 1) + "–" + (pages[1] + 1) + " of " + tp
+    : "Page " + (pages[0] + 1) + " of " + tp;
+  $("pg-prev").disabled = pages[0] <= 0;
+  $("pg-next").disabled = pages[pages.length - 1] >= tp - 1;
+
+  $("seltools").classList.toggle("show", selIdx >= 0);
+  updateLength();
+}
+$("pg-prev").addEventListener("click", () => {
+  scPage = Math.max(0, scPage - (LAYOUT.book ? 2 : 1)); renderStaff();
+});
+$("pg-next").addEventListener("click", () => {
+  scPage = Math.min(totalPages() - 1, scPage + (LAYOUT.book ? 2 : 1)); renderStaff();
+});
+
+let _rsz = null;
+window.addEventListener("resize", () => {
+  clearTimeout(_rsz);
+  _rsz = setTimeout(() => {
+    const v = document.getElementById("view-score");
+    if (v && !v.hidden) renderStaff();
+  }, 200);
+});
+
+/* ---- input ---- */
+function effDur(){ return curDur * (curDot ? 1.5 : 1); }
+
+function previewNote(midi){
+  try {
+    ensureLive(); liveCtx.resume();
+    if (!previewEnv) previewEnv = buildEnv(liveCtx, liveBufs);
+    LEADS[SCORE.lead](previewEnv, liveCtx.currentTime + 0.02, mFreq(midi), 0.35);
+  } catch(e){}
+}
+function previewEvent(nt){
+  if (!nt.rest) nt.pitches.forEach(pp => previewNote(noteMidi(pp)));
+}
+function togglePitch(nt, p){
+  const i = nt.pitches.findIndex(q =>
+    q.letter === p.letter && q.acc === p.acc && q.oct === p.oct);
+  if (i >= 0) nt.pitches.splice(i, 1);
+  else if (nt.pitches.length < 5) nt.pitches.push(p);
+  if (!nt.pitches.length) nt.pitches.push(p);   // never leave an empty chord
+}
+
+function inputPitch(letter, acc){
+  const oct = +$("sc-oct").value;
+  const p = { letter, acc, oct };
+  pushHistory();
+  if (selIdx >= 0){
+    const nt = SCORE.notes[selIdx];
+    if (nt.rest){ delete nt.rest; nt.rest = false; nt.pitches = [p]; }
+    else if (chordMode) togglePitch(nt, p);
+    else nt.pitches = [p];
+    previewEvent(nt);
+  } else if (chordMode && SCORE.notes.length && !SCORE.notes[SCORE.notes.length - 1].rest){
+    const nt = SCORE.notes[SCORE.notes.length - 1];
+    togglePitch(nt, p);
+    previewEvent(nt);
+  } else {
+    const nt = { d: effDur(), pitches: [p] };
+    SCORE.notes.push(nt);
+    scPage = 1e9;                       // clamp lands on the last page
+    previewEvent(nt);
+    setTimeout(() => {
+      const g = document.querySelector('.staffwrap [data-idx="' + (SCORE.notes.length - 1) + '"]');
+      if (g){ try { g.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch(e){} }
+    }, 40);
+  }
+  renderStaff();
+}
+
+document.querySelectorAll(".wkey").forEach(k =>
+  k.addEventListener("click", () => inputPitch(k.dataset.k, "")));
+document.querySelectorAll(".bkey").forEach(k =>
+  k.addEventListener("click", () => {
+    const pair = BLACK_PAIRS[+k.dataset.i];
+    if (accPref === "#") inputPitch(pair[0], "#");
+    else inputPitch(pair[1], "b");
+  }));
+function updateBlackLabels(){
+  document.querySelectorAll(".bkey").forEach(k => {
+    const pair = BLACK_PAIRS[+k.dataset.i];
+    k.textContent = accPref === "#" ? pair[0] + "♯" : pair[1] + "♭";
+  });
+}
+
+document.querySelectorAll('.durbtn[data-d]').forEach(b =>
+  b.addEventListener("click", () => {
+    curDur = +b.dataset.d;
+    document.querySelectorAll('.durbtn[data-d]').forEach(x => x.classList.toggle("on", x === b));
+    if (selIdx >= 0){ pushHistory(); SCORE.notes[selIdx].d = effDur(); renderStaff(); }
+  }));
+$("sc-dot").addEventListener("click", () => {
+  curDot = !curDot;
+  $("sc-dot").classList.toggle("on", curDot);
+  if (selIdx >= 0){ pushHistory(); SCORE.notes[selIdx].d = effDur(); renderStaff(); }
+});
+$("sc-chord").addEventListener("click", () => {
+  chordMode = !chordMode;
+  $("sc-chord").classList.toggle("on", chordMode);
+  setStatus(null, chordMode
+    ? "Chord mode: piano keys stack onto the last (or selected) note. Tap a key again to remove it."
+    : "Chord mode off — keys add new notes.");
+});
+$("sc-undo").addEventListener("click", () => {
+  if (!HISTORY.length){ setStatus(null, "Nothing to undo."); return; }
+  SCORE.notes = JSON.parse(HISTORY.pop());
+  if (selIdx >= SCORE.notes.length) selIdx = SCORE.notes.length - 1;
+  renderStaff();
+});
+document.querySelectorAll('.durbtn[data-r]').forEach(b =>
+  b.addEventListener("click", () => {
+    pushHistory();
+    const d = (+b.dataset.r) * (curDot ? 1.5 : 1);
+    if (selIdx >= 0){
+      const nt = SCORE.notes[selIdx];
+      nt.rest = true; nt.d = d; delete nt.pitches;
+    } else { SCORE.notes.push({ rest: true, d }); scPage = 1e9; }
+    renderStaff();
+  }));
+$("sc-sharp").addEventListener("click", () => {
+  accPref = "#";
+  $("sc-sharp").classList.add("on"); $("sc-flat").classList.remove("on");
+  updateBlackLabels();
+});
+$("sc-flat").addEventListener("click", () => {
+  accPref = "b";
+  $("sc-flat").classList.add("on"); $("sc-sharp").classList.remove("on");
+  updateBlackLabels();
+});
+
+$("staffwrap").addEventListener("click", (e) => {
+  const g = e.target.closest ? e.target.closest("[data-idx]") : null;
+  selIdx = g ? +g.dataset.idx : -1;
+  renderStaff();
+});
+$("sc-prev").addEventListener("click", () => { if (selIdx > 0){ selIdx--; scPage = pageOfIdx(selIdx); renderStaff(); } });
+$("sc-next").addEventListener("click", () => { if (selIdx < SCORE.notes.length - 1){ selIdx++; scPage = pageOfIdx(selIdx); renderStaff(); } });
+$("sc-del").addEventListener("click", () => {
+  if (selIdx < 0) return;
+  pushHistory();
+  SCORE.notes.splice(selIdx, 1);
+  if (selIdx >= SCORE.notes.length) selIdx = SCORE.notes.length - 1;
+  renderStaff();
+});
+$("sc-done").addEventListener("click", () => { selIdx = -1; renderStaff(); });
+$("sc-clear").addEventListener("click", () => {
+  if (SCORE.notes.length) pushHistory();
+  SCORE.notes = []; selIdx = -1; renderStaff();
+  setStatus(null, "Score cleared (↩ Undo brings it back).");
+});
+
+$("sc-clef").addEventListener("change", () => { SCORE.clef = $("sc-clef").value; renderStaff(); });
+$("sc-num").addEventListener("change", () => { SCORE.num = +$("sc-num").value; renderStaff(); });
+$("sc-den").addEventListener("change", () => { SCORE.den = +$("sc-den").value; renderStaff(); });
+$("sc-bpm").addEventListener("change", () => {
+  SCORE.bpm = Math.max(40, Math.min(220, +$("sc-bpm").value || 100));
+  updateLength();
+});
+$("sc-lead").addEventListener("change", () => { SCORE.lead = $("sc-lead").value; });
+$("sc-name").addEventListener("input", () => { SCORE.name = $("sc-name").value; });
+
+/* ---- playback ---- */
+function stopScore(){
+  scoreTimers.forEach(clearTimeout); scoreTimers = [];
+  if (scoreOut){ try { scoreOut.disconnect(); } catch(e){} scoreOut = null; }
+  scorePlaying = false;
+  const btn = $("sc-play"); if (btn) btn.textContent = "Play";
+  document.querySelectorAll(".staffwrap .playnote").forEach(el =>
+    el.setAttribute("class", "nh"));
+}
+
+function playScoreFrom(startIdx){
+  if (scorePlaying){ stopScore(); setStatus(); return; }
+  if (!SCORE.notes.length){ setStatus(null, "Add some notes first — tap a piano key."); return; }
+  try {
+    ensureLive(); liveCtx.resume();
+    if (playing){ stopPlayback(); playing = false; }
+    stopRemix();
+    const env = buildEnv(liveCtx, liveBufs);
+    scoreOut = env.out;
+    const spb = 60 / SCORE.bpm;
+    let t = liveCtx.currentTime + 0.15;
+    for (let i = startIdx; i < SCORE.notes.length; i++){
+      const nt = SCORE.notes[i];
+      const durS = nt.d * spb;
+      if (!nt.rest)
+        nt.pitches.forEach(pp => LEADS[SCORE.lead](env, t, mFreq(noteMidi(pp)), durS * 0.92));
+      const ms = (t - liveCtx.currentTime) * 1000;
+      scoreTimers.push(setTimeout(() => {
+        const pg = pageOfIdx(i);
+        const shownStart = LAYOUT.book ? scPage - (scPage % 2) : scPage;
+        const shownEnd = LAYOUT.book ? shownStart + 1 : shownStart;
+        if (pg < shownStart || pg > shownEnd){ scPage = pg; renderStaff(); }
+        document.querySelectorAll(".staffwrap .playnote").forEach(el => el.setAttribute("class", "nh"));
+        const g = document.querySelector('.staffwrap [data-idx="' + i + '"]');
+        if (g){
+          g.querySelectorAll(".nh").forEach(el => el.setAttribute("class", "nh playnote"));
+          try { g.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" }); } catch(e){}
+        }
+      }, Math.max(0, ms)));
+      t += durS;
+    }
+    scoreTimers.push(setTimeout(() => { stopScore(); setStatus(); },
+      (t - liveCtx.currentTime) * 1000 + 400));
+    scorePlaying = true;
+    $("sc-play").textContent = "Stop";
+    setStatus(null, "Playing score…");
+  } catch (e){ setStatus("Audio error: " + (e && e.message ? e.message : e)); }
+}
+$("sc-play").addEventListener("click", () => playScoreFrom(0));
+$("sc-playfrom").addEventListener("click", () => playScoreFrom(Math.max(0, selIdx)));
+
+$("sc-export").addEventListener("click", async () => {
+  if (!SCORE.notes.length){ setStatus(null, "Nothing to export yet."); return; }
+  try {
+    setStatus(null, "Rendering score…");
+    const spb = 60 / SCORE.bpm;
+    const total = SCORE.notes.reduce((a, n) => a + n.d, 0) * spb;
+    const octx = new OfflineAudioContext(2, Math.ceil((total + 2.5) * 44100), 44100);
+    const env = buildEnv(octx, makeBuffers(octx));
+    let t = 0.05;
+    SCORE.notes.forEach(nt => {
+      if (!nt.rest)
+        nt.pitches.forEach(pp => LEADS[SCORE.lead](env, t, mFreq(noteMidi(pp)), nt.d * spb * 0.92));
+      t += nt.d * spb;
+    });
+    const rendered = await octx.startRendering();
+    const nm = (SCORE.name || "my-score").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    downloadBlob(nm + ".wav", encodeWav(rendered));
+    setStatus(null, "Score rendered (" + Math.round(total + 2.5) + "s WAV).");
+  } catch (e){ setStatus("Export error: " + (e && e.message ? e.message : e)); }
+});
+
+function escXml(t){ return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+$("sc-sheet").addEventListener("click", () => {
+  if (!SCORE.notes.length){ setStatus(null, "Nothing to save yet — add some notes."); return; }
+  const keepSel = selIdx;
+  selIdx = -1; computeRows();               // capture without the gold selection tint
+  const bmAll = buildRowsMarkup(LAYOUT.rows, 0, LAYOUT.availW, false);
+  const w = LAYOUT.availW, h = bmAll.height;
+  const title = (SCORE.name.trim() || "Untitled score");
+  const meta = SCORE.num + "/" + SCORE.den + " · " + SCORE.bpm + " BPM · " +
+               VOICE_LABEL[SCORE.lead] + " · " + (SCORE.clef === "treble" ? "treble" : "bass") + " clef";
+  const pad = 54;
+  const src = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + (h + pad) +
+    '" viewBox="0 0 ' + w + ' ' + (h + pad) + '">' +
+    '<rect width="100%" height="100%" fill="#f4f0e2"/>' +
+    '<text x="' + (w / 2) + '" y="27" font-family="Georgia, serif" font-size="19" fill="#2a2620" text-anchor="middle">' + escXml(title) + '</text>' +
+    '<text x="' + (w / 2) + '" y="44" font-family="Georgia, serif" font-size="11" fill="#6b6350" text-anchor="middle">' + escXml(meta) + '</text>' +
+    '<g transform="translate(0,' + pad + ')">' + bmAll.inner + '</g></svg>';
+  const url = URL.createObjectURL(new Blob([src], { type: "image/svg+xml" }));
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const scale = 2;
+      const cv = document.createElement("canvas");
+      cv.width = w * scale; cv.height = (h + pad) * scale;
+      const cx = cv.getContext("2d");
+      cx.scale(scale, scale);
+      cx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      cv.toBlob(b => {
+        selIdx = keepSel; renderStaff();
+        if (b){
+          downloadBlob((SCORE.name || "my-score").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + "-sheet.png", b);
+          setStatus(null, "Sheet image saved as a PNG.");
+        } else setStatus("Couldn't create the image on this browser.");
+      }, "image/png");
+    } catch (e){
+      selIdx = keepSel; renderStaff();
+      setStatus("Sheet export failed: " + (e && e.message ? e.message : e));
+    }
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    selIdx = keepSel; renderStaff();
+    setStatus("Sheet export failed on this browser — a screenshot works as a fallback.");
+  };
+  img.src = url;
+});
+
+/* ---- saved scores ---- */
+async function loadScores(){
+  try { const v = await kvGet("theme-forge-scores"); if (v) SCORES = JSON.parse(v); } catch (e){}
+  renderScores();
+}
+async function persistScores(){ await kvSet("theme-forge-scores", JSON.stringify(SCORES)); }
+
+$("sc-save").addEventListener("click", async () => {
+  if (!SCORE.notes.length){ setStatus(null, "Add some notes before saving."); return; }
+  const entry = {
+    id: "S" + Date.now().toString(36).slice(-5).toUpperCase(),
+    kind: "score",
+    name: (SCORE.name.trim() || "Untitled score"),
+    clef: SCORE.clef, num: SCORE.num, den: SCORE.den,
+    bpm: SCORE.bpm, lead: SCORE.lead,
+    notes: JSON.parse(JSON.stringify(SCORE.notes))
+  };
+  SCORES.push(entry);
+  await persistScores();
+  renderScores();
+  setStatus(null, "Score saved — stored on this device.");
+});
+
+const scoreListEl = document.getElementById("score-list");
+function renderScores(){
+  scoreListEl.innerHTML = "";
+  if (!SCORES.length) return;
+  const h = document.createElement("div");
+  h.className = "cat";
+  h.innerHTML = 'S · Your scores <span>(tap to load for editing)</span>';
+  scoreListEl.appendChild(h);
+  const grid = document.createElement("div");
+  grid.className = "list";
+  SCORES.forEach(sc => {
+    const wrap = document.createElement("div");
+    wrap.className = "cwrap";
+    const b = document.createElement("button");
+    b.className = "trk";
+    const totalQ = sc.notes.reduce((a, n) => a + n.d, 0);
+    const secs = Math.round(totalQ * 60 / sc.bpm);
+    b.innerHTML = '<div class="id">' + sc.id + '</div>' +
+      '<div class="name">' + sc.name.replace(/</g, "&lt;") + '</div>' +
+      '<div class="info">' + VOICE_LABEL[sc.lead] + ' <span>· ' + sc.notes.length +
+      ' notes · ' + secs + 's · ' + sc.num + "/" + sc.den + '</span></div>';
+    b.addEventListener("click", () => {
+      SCORE = { name: sc.name, clef: sc.clef, num: sc.num, den: sc.den,
+                bpm: sc.bpm, lead: sc.lead,
+                notes: JSON.parse(JSON.stringify(sc.notes)).map(normNote) };
+      selIdx = -1; HISTORY = [];
+      $("sc-name").value = SCORE.name;
+      $("sc-clef").value = SCORE.clef;
+      $("sc-num").value = String(SCORE.num);
+      $("sc-den").value = String(SCORE.den);
+      $("sc-bpm").value = SCORE.bpm;
+      $("sc-lead").value = SCORE.lead;
+      renderStaff();
+      setStatus(null, '"' + sc.name + '" loaded into the editor.');
+      window.scrollTo(0, 0);
+    });
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    function mini(txt, label, fn){
+      const x = document.createElement("button");
+      x.className = "mini"; x.textContent = txt;
+      x.setAttribute("aria-label", label + " " + sc.name);
+      x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
+      return x;
+    }
+    acts.appendChild(mini("↗", "Share", () => galleryShare("Score", sc)));
+    acts.appendChild(mini("⬇ JSON", "Download", () =>
+      downloadJSON("score_" + sc.id + ".json", sc)));
+    acts.appendChild(mini("✕", "Delete", async () => {
+      SCORES = SCORES.filter(x => x.id !== sc.id);
+      await persistScores();
+      renderScores();
+    }));
+    wrap.appendChild(b); wrap.appendChild(acts);
+    grid.appendChild(wrap);
+  });
+  scoreListEl.appendChild(grid);
+}
+loadScores();
+renderStaff();
+
+/* ============================================================
+   NAVIGATION — home screen and the three tool views
+   ============================================================ */
+
+function showView(id){
+  document.querySelectorAll(".view").forEach(v => { v.hidden = v.id !== id; });
+  if (id !== "view-forge" && playing){ stopPlayback(); playing = false; }
+  if (id !== "view-remix") stopRemix();
+  if (id !== "view-score") stopScore();
+  window.scrollTo(0, 0);
+  setStatus();
+}
+document.querySelectorAll("[data-view]").forEach(b =>
+  b.addEventListener("click", () => showView(b.dataset.view)));
+document.querySelectorAll("[data-home]").forEach(b =>
+  b.addEventListener("click", () => showView("view-home")));
+showView("view-home");
+
+/* ============================================================
+   COMMUNITY GALLERY — GitHub Discussions
+   Set GH_REPO to "username/repo" (with Discussions enabled) to
+   activate the ↗ Share buttons and the home-screen gallery link.
+   Reactions (👍 ❤️ 😄) and comments come free from GitHub.
+   ============================================================ */
+const GH_REPO = "";                      // e.g. "casim/musical-forge-studio"
+const GALLERY_CATEGORY = "show-and-tell";
+
+function galleryShare(kind, obj){
+  if (!GH_REPO){
+    setStatus(null, "Sharing isn't switched on yet — the app owner sets GH_REPO inside this file to a GitHub repo with Discussions enabled.");
+    return;
+  }
+  const json = JSON.stringify(obj, null, 2);
+  const title = "[" + kind + "] " + (obj.name || obj.id || "untitled");
+  let body = "**" + kind + "** shared from Musical Forge Studio.\n" +
+    "To hear or edit it: open the app → Theme Forge page → **Import JSON** → paste this into a file (or download it from a comment below).\n\n" +
+    "```json\n" + json + "\n```\n";
+  let url = "https://github.com/" + GH_REPO + "/discussions/new?category=" + GALLERY_CATEGORY +
+    "&title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
+  if (url.length > 7600){
+    downloadJSON(kind.toLowerCase().replace(/[^a-z]/g, "") + "_" + (obj.id || "share") + ".json", obj);
+    body = "**" + kind + "**: " + (obj.name || "") + " — the JSON was too large for a prefilled link, " +
+      "so it downloaded to my device; I'll attach it or paste it in a comment below. " +
+      "Import it via the app's Import JSON button to hear it.";
+    url = "https://github.com/" + GH_REPO + "/discussions/new?category=" + GALLERY_CATEGORY +
+      "&title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
+    setStatus(null, "JSON downloaded — attach or paste it into the discussion that just opened.");
+  } else {
+    setStatus(null, "Opening the gallery — post it, and others can react and comment.");
+  }
+  window.open(url, "_blank");
+}
+document.getElementById("galleryBtn").addEventListener("click", () => {
+  if (!GH_REPO){
+    setStatus(null, "The gallery isn't configured yet — the app owner sets GH_REPO inside this file.");
+    return;
+  }
+  window.open("https://github.com/" + GH_REPO + "/discussions/categories/" + GALLERY_CATEGORY, "_blank");
+});
+
 
 $("r-forge").addEventListener("click", () => {
   if (!remix) return;
@@ -1906,7 +2854,7 @@ $("r-forge").addEventListener("click", () => {
   if (!$("f-name").value) $("f-name").value = "In the style of " + remix.name;
   setStatus(null, "Forge set to " + NOTE_NAMES[remix.keyPc] + " " + remix.mode + " · " + bpm +
     " BPM. Roll 🎲 to compose an original theme in that space.");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  showView("view-forge");
 });
 
 function rms(an){
