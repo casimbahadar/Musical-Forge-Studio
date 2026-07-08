@@ -257,7 +257,7 @@
         signature and instrument, tap piano keys to add notes, hear it as you go, export a WAV.</div>
       </button>
     </div>
-    <button class="fbtn" id="galleryBtn" style="margin-top:14px;width:100%">🌐 Community gallery — browse &amp; share creations</button>
+    <button class="fbtn" id="galleryBtn" style="margin-top:14px;width:100%">🌐 Community — share your creations</button>
     <div class="statusline" style="margin-top:10px"></div>
   </div>
 
@@ -329,10 +329,10 @@
       <b>Import JSON</b> reads recipe files back in — it accepts theme recipes, Remix-Lab FX
       presets, and Score Composer scores, even mixed in one file, and sorts each to the right
       place.</p>
-      <p><b>↗ Share</b> on any saved card posts your creation to the community gallery (a GitHub
-      discussion board) where others can download it, leave comments, and react with 👍 ❤️ 😄.
-      To try someone else's creation from the gallery: copy the JSON from their post into a file
-      and use <b>Import JSON</b>.</p>
+      <p><b>↗ Share</b> on any saved card creates a <b>play-in-app link</b> for that creation and
+      offers it to your share sheet (or copies it). Send it to anyone, anywhere — they open the
+      link and the app loads your creation, ready to play or save. No account, no sign-in, nothing
+      to install; whoever opens it is asked before anything is saved to their device.</p>
       <p>The <b>Remix Lab</b> and <b>Score Composer</b> pages have their own guides just like this
       one — look for the 🎚 and 🎼 panels there.</p>
     </div>
@@ -1439,12 +1439,17 @@ renderLists();
 
 
 
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 function setNow(){
   const tr = trackById(curId);
   const voice = tr.stinger ? (VOICE_LABEL[tr.voice] || "bell") : VOICE_LABEL[tr.lead];
   const info = tr.stinger ? voice + " stinger · one-shot"
     : voice + " · " + keyName(tr.root, tr.mode) + " " + tr.mode + " · " + tr.bpm + " BPM";
-  nowEl.innerHTML = "<b>" + tr.id + "</b> — " + tr.name + '<br><span class="meta">' + info + "</span>";
+  nowEl.innerHTML = "<b>" + tr.id + "</b> — " + esc(tr.name) + '<br><span class="meta">' + info + "</span>";
 }
 function setStatus(err, msg){
   const html = err ? '<span class="err">' + err + '</span>'
@@ -1626,7 +1631,7 @@ function renderCustoms(){
   });
   customsEl.appendChild(grid);
 }
-loadCustoms();
+const customsReady = loadCustoms();
 
 /* ---- theme file transfer ---- */
 
@@ -1650,6 +1655,41 @@ $("f-dlall").addEventListener("click", () => {
     TRACKS.length + " stock + " + CUSTOMS.length + " yours). Share the file or re-Import it anywhere.");
 });
 
+/* Classify an incoming object by shape. Returns "theme" | "fx" | "score" |
+   null. This is the single validation gate shared by file import and
+   shared-link import, so both paths accept exactly the same things. */
+function classifyShared(t){
+  if (!t || !t.id) return null;
+  if (t.kind === "score" && Array.isArray(t.notes)) return "score";  // score shape
+  if (t.params && t.name && !t.mode) return "fx";                    // FX preset shape
+  if (t.mode && t.prog) return "theme";                              // theme recipe shape
+  return null;
+}
+async function importItems(arr){
+  const haveThemes = new Set(TRACKS.concat(CUSTOMS).map(t => t.id));
+  const haveFx = new Set(FX_SAVES.map(f => f.id));
+  const haveSc = new Set(SCORES.map(sc => sc.id));
+  let themes = 0, fx = 0, scores = 0, skipped = 0;
+  arr.forEach(t => {
+    switch (classifyShared(t)){
+      case "score":
+        if (haveSc.has(t.id)){ skipped++; break; }
+        SCORES.push(t); haveSc.add(t.id); scores++; break;
+      case "fx":
+        if (haveFx.has(t.id)){ skipped++; break; }
+        FX_SAVES.push(t); haveFx.add(t.id); fx++; break;
+      case "theme":
+        if (haveThemes.has(t.id)){ skipped++; break; }
+        if (t.cat !== "A" && t.cat !== "B" && t.cat !== "C" && t.cat !== "D") t.cat = "X";
+        CUSTOMS.push(t); haveThemes.add(t.id); themes++; break;
+      default: skipped++;
+    }
+  });
+  if (themes){ await persistCustoms(); renderCustoms(); }
+  if (fx){ await persistFxSaves(); renderFxSaves(); }
+  if (scores){ await persistScores(); renderScores(); }
+  return { themes, fx, scores, skipped };
+}
 $("f-import").addEventListener("click", () => $("f-file").click());
 $("f-file").addEventListener("change", (ev) => {
   const file = ev.target.files && ev.target.files[0];
@@ -1659,34 +1699,14 @@ $("f-file").addEventListener("change", (ev) => {
     try {
       let arr = JSON.parse(reader.result);
       if (!Array.isArray(arr)) arr = [arr];
-      const haveThemes = new Set(TRACKS.concat(CUSTOMS).map(t => t.id));
-      const haveFx = new Set(FX_SAVES.map(f => f.id));
-      const haveSc = new Set(SCORES.map(sc => sc.id));
-      let themes = 0, fx = 0, scores = 0, skipped = 0;
-      arr.forEach(t => {
-        if (!t || !t.id){ skipped++; return; }
-        if (t.kind === "score" && Array.isArray(t.notes)){   // score shape
-          if (haveSc.has(t.id)){ skipped++; return; }
-          SCORES.push(t); haveSc.add(t.id); scores++;
-        } else if (t.params && t.name && !t.mode){          // FX preset shape
-          if (haveFx.has(t.id)){ skipped++; return; }
-          FX_SAVES.push(t); haveFx.add(t.id); fx++;
-        } else if (t.mode && t.prog){                 // theme recipe shape
-          if (haveThemes.has(t.id)){ skipped++; return; }
-          if (t.cat !== "A" && t.cat !== "B" && t.cat !== "C" && t.cat !== "D") t.cat = "X";
-          CUSTOMS.push(t); haveThemes.add(t.id); themes++;
-        } else skipped++;
-      });
-      if (themes){ await persistCustoms(); renderCustoms(); }
-      if (fx){ await persistFxSaves(); renderFxSaves(); }
-      if (scores){ await persistScores(); renderScores(); }
+      const r = await importItems(arr);
       const parts = [];
-      if (themes) parts.push(themes + " theme(s)");
-      if (fx) parts.push(fx + " FX preset(s)");
-      if (scores) parts.push(scores + " score(s)");
+      if (r.themes) parts.push(r.themes + " theme(s)");
+      if (r.fx) parts.push(r.fx + " FX preset(s)");
+      if (r.scores) parts.push(r.scores + " score(s)");
       setStatus(null, parts.length
-        ? "Imported " + parts.join(" and ") + (skipped ? " (" + skipped + " skipped: duplicates or unrecognized)" : "") + "."
-        : "Nothing imported — that file didn't contain theme recipes or FX presets.");
+        ? "Imported " + parts.join(" and ") + (r.skipped ? " (" + r.skipped + " skipped: duplicates or unrecognized)" : "") + "."
+        : "Nothing imported — that file didn't contain theme recipes, FX presets, or scores.");
     } catch (e){
       setStatus("Import failed: not valid JSON.");
     }
@@ -2148,7 +2168,7 @@ function renderFxSaves(){
       $("r-preset").value = "none";
       setParams(fx.params);
       if (remixPlaying){ stopRemix(); startRemixPlayback(); }
-      setStatus(null, '"' + fx.name + '" applied to the sliders.');
+      setStatus(null, '"' + esc(fx.name) + '" applied to the sliders.');
     });
     const acts = document.createElement("div");
     acts.className = "acts";
@@ -2172,7 +2192,7 @@ function renderFxSaves(){
   });
   fxListEl.appendChild(grid);
 }
-loadFxSaves();
+const fxReady = loadFxSaves();
 
 /* ============================================================
    SCORE COMPOSER
@@ -2774,7 +2794,7 @@ function renderScores(){
       $("sc-bpm").value = SCORE.bpm;
       $("sc-lead").value = SCORE.lead;
       renderStaff();
-      setStatus(null, '"' + sc.name + '" loaded into the editor.');
+      setStatus(null, '"' + esc(sc.name) + '" loaded into the editor.');
       window.scrollTo(0, 0);
     });
     const acts = document.createElement("div");
@@ -2799,7 +2819,7 @@ function renderScores(){
   });
   scoreListEl.appendChild(grid);
 }
-loadScores();
+const scoresReady = loadScores();
 renderStaff();
 
 /* ============================================================
@@ -2821,46 +2841,103 @@ document.querySelectorAll("[data-home]").forEach(b =>
 showView("view-home");
 
 /* ============================================================
-   COMMUNITY GALLERY — GitHub Discussions
-   Set GH_REPO to "username/repo" (with Discussions enabled) to
-   activate the ↗ Share buttons and the home-screen gallery link.
-   Reactions (👍 ❤️ 😄) and comments come free from GitHub.
+   COMMUNITY SHARING — account-free play links
+   Sharing hands off a self-contained "play in the app" link (see
+   shareLink below). Anyone can open it to play or save the creation —
+   no account, no server, nothing stored anywhere, nothing to moderate.
    ============================================================ */
-const GH_REPO = "";                      // e.g. "casim/musical-forge-studio"
-const GALLERY_CATEGORY = "show-and-tell";
 
-function galleryShare(kind, obj){
-  if (!GH_REPO){
-    setStatus(null, "Sharing isn't switched on yet — the app owner sets GH_REPO inside this file to a GitHub repo with Discussions enabled.");
-    return;
+/* Shareable "play in the app" deep links — no server, no account, no token.
+   A creation is encoded (base64url of its own JSON) into the URL hash, so
+   opening the link loads that one creation locally. Nothing is uploaded; the
+   only data in a link is the creation's own public recipe. Anything decoded
+   from a link is validated exactly like a file import, and never saved to a
+   device without the visitor's consent. */
+function toB64url(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function fromB64url(b64){
+  const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function shareLink(obj){
+  return location.origin + location.pathname + "#c=" + toB64url(JSON.stringify(obj));
+}
+
+async function galleryShare(kind, obj){
+  const link = shareLink(obj);
+  const nm = obj.name || obj.id || kind;
+  // Account-free sharing: hand off the self-contained play link. Whoever
+  // opens it can play or save this creation — no account, no server.
+  if (navigator.share){
+    try {
+      await navigator.share({ title: "Musical Forge Studio", text: "Play “" + nm + "” in Musical Forge Studio:", url: link });
+      setStatus(null, "Shared. Anyone who opens the link can play or save this " + kind + " — no account needed.");
+      return;
+    } catch (e){
+      if (e && e.name === "AbortError") return;   // share sheet dismissed
+      // otherwise fall through to clipboard
+    }
   }
-  const json = JSON.stringify(obj, null, 2);
-  const title = "[" + kind + "] " + (obj.name || obj.id || "untitled");
-  let body = "**" + kind + "** shared from Musical Forge Studio.\n" +
-    "To hear or edit it: open the app → Theme Forge page → **Import JSON** → paste this into a file (or download it from a comment below).\n\n" +
-    "```json\n" + json + "\n```\n";
-  let url = "https://github.com/" + GH_REPO + "/discussions/new?category=" + GALLERY_CATEGORY +
-    "&title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
-  if (url.length > 7600){
-    downloadJSON(kind.toLowerCase().replace(/[^a-z]/g, "") + "_" + (obj.id || "share") + ".json", obj);
-    body = "**" + kind + "**: " + (obj.name || "") + " — the JSON was too large for a prefilled link, " +
-      "so it downloaded to my device; I'll attach it or paste it in a comment below. " +
-      "Import it via the app's Import JSON button to hear it.";
-    url = "https://github.com/" + GH_REPO + "/discussions/new?category=" + GALLERY_CATEGORY +
-      "&title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
-    setStatus(null, "JSON downloaded — attach or paste it into the discussion that just opened.");
-  } else {
-    setStatus(null, "Opening the gallery — post it, and others can react and comment.");
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    try {
+      await navigator.clipboard.writeText(link);
+      setStatus(null, "Play link copied — paste it anywhere. Anyone who opens it can play or save this " + kind + ", no account needed.");
+      return;
+    } catch (e){ /* fall through to manual copy */ }
   }
-  window.open(url, "_blank");
+  window.prompt("Copy this play-in-app link and share it with anyone:", link);
 }
 document.getElementById("galleryBtn").addEventListener("click", () => {
-  if (!GH_REPO){
-    setStatus(null, "The gallery isn't configured yet — the app owner sets GH_REPO inside this file.");
+  window.alert("Community sharing\n\nOpen any saved Theme, FX preset, or Score and tap ↗ Share to get a play-in-app link. Send it to anyone, anywhere — they open the link and the app loads your creation, ready to play or save. No account, no sign-in, nothing to install.");
+});
+
+/* If the page was opened with a "#c=<encoded recipe>" link, load that one
+   creation. Runs only after saved data has loaded (so dedup is correct and
+   the loaded item is not clobbered), validates via the shared import gate,
+   and asks before writing anything to this device. */
+async function handleShareLink(){
+  const m = /[#&]c=([A-Za-z0-9\-_]+)/.exec(location.hash || "");
+  if (!m) return;
+  // Strip the payload from the address bar first: a refresh must not silently
+  // re-import, and the recipe should not linger in the URL or history.
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e){}
+  let obj = null;
+  try {
+    if (m[1].length > 300000) throw new Error("oversized");   // ceiling on decoded size
+    obj = JSON.parse(fromB64url(m[1]));
+  } catch (e){
+    setStatus("That shared link couldn't be read.");
     return;
   }
-  window.open("https://github.com/" + GH_REPO + "/discussions/categories/" + GALLERY_CATEGORY, "_blank");
-});
+  const kind = classifyShared(obj);
+  if (!kind){
+    setStatus("That shared link isn't a valid theme, FX preset, or score.");
+    return;
+  }
+  const label = kind === "fx" ? "FX preset" : kind;
+  const nm = String(obj.name || obj.id || "untitled").slice(0, 80);
+  // Consent: never write to a visitor's library without asking.
+  if (!window.confirm("Load shared " + label + " “" + nm + "” into your library on this device?")){
+    setStatus(null, "Shared " + label + " not loaded.");
+    return;
+  }
+  const r = await importItems([obj]);
+  showView(kind === "score" ? "view-score" : kind === "fx" ? "view-remix" : "view-forge");
+  if (!(r.themes || r.fx || r.scores)){
+    setStatus(null, "You already have that " + label + " — it's in your list below.");
+  } else {
+    setStatus(null, "Loaded shared " + label + " “" + esc(nm) + "” into your list below — press ▶ to play, or keep it.");
+  }
+}
+Promise.all([customsReady, fxReady, scoresReady]).then(handleShareLink, handleShareLink);
+// Also handle a link opened while the app is already running.
+window.addEventListener("hashchange", handleShareLink);
 
 
 $("r-forge").addEventListener("click", () => {
