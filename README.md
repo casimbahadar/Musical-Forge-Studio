@@ -5,8 +5,8 @@ audio, or **write** sheet music. One HTML file, zero dependencies, pure Web
 Audio API. Every page has a built-in plain-language guide, so first-timers
 can do everything a pro can.
 
-**[▶ Try it live](https://YOUR-USERNAME.github.io/musical-forge-studio/)**
-*(update this link after enabling GitHub Pages)*
+**[▶ Try it live](https://casimbahadar.github.io/Musical-Forge-Studio/)**
+*(enable GitHub Pages on this repo to activate the link)*
 
 A home screen lets you pick a tool; each opens its own uncluttered page with
 a ‹ Home button — built mobile-first, and the whole app widens responsively
