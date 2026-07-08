@@ -75,16 +75,16 @@ Real engraved sheet music, note by note, on paginated sheets:
 - **Save**, reload for editing, or share the score as a small JSON file —
   whoever imports it gets your exact score, editable.
 
-## 🌐 Community gallery
+## 🌐 Community sharing
 
 Every saved theme, FX preset, and score card has an **↗ Share** button that
-posts it to the project's gallery — a GitHub Discussions board — where
-others can download the JSON, leave comments, and react with 👍 ❤️ 😄. A
-**Community gallery** button on the home screen browses it.
-
-To activate on your own fork: enable Discussions in the repo settings, keep
-the default "Show and tell" category, and set `GH_REPO = "username/repo"`
-near the bottom of `index.html`.
+creates a self-contained **play-in-app link** and hands it to your device's
+share sheet (or copies it to the clipboard). Send that link to anyone,
+anywhere — they open it and the app loads your creation, ready to play or
+save. No account, no sign-in, no server, and nothing to install: the link
+carries the creation's own recipe and nothing else. Whoever opens it is
+asked before anything is saved to their device, and the recipe is validated
+exactly like a file import.
 
 ## Sharing everything
 
