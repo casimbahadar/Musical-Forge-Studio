@@ -1609,7 +1609,7 @@ function renderCustoms(){
       x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
       return x;
     }
-    acts.appendChild(mini("↗", "Share", () => galleryShare("Theme", tr)));
+    acts.appendChild(mini("↗ Share", "Share", () => galleryShare("Theme", tr)));
     acts.appendChild(mini("♫ WAV", "Export WAV of", () => {
       curId = tr.id;
       document.querySelectorAll(".trk").forEach(x =>
@@ -2179,7 +2179,7 @@ function renderFxSaves(){
       x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
       return x;
     }
-    acts.appendChild(mini("↗", "Share", () => galleryShare("FX preset", fx)));
+    acts.appendChild(mini("↗ Share", "Share", () => galleryShare("FX preset", fx)));
     acts.appendChild(mini("⬇ JSON", "Download", () =>
       downloadJSON("fx_" + fx.id + ".json", fx)));
     acts.appendChild(mini("✕", "Delete", async () => {
@@ -2806,7 +2806,7 @@ function renderScores(){
       x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
       return x;
     }
-    acts.appendChild(mini("↗", "Share", () => galleryShare("Score", sc)));
+    acts.appendChild(mini("↗ Share", "Share", () => galleryShare("Score", sc)));
     acts.appendChild(mini("⬇ JSON", "Download", () =>
       downloadJSON("score_" + sc.id + ".json", sc)));
     acts.appendChild(mini("✕", "Delete", async () => {
