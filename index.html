@@ -202,6 +202,10 @@
   .chip.on{background:var(--panel2);border-color:var(--moon);color:var(--moon)}
   #cm-sort{margin-left:auto;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px}
   #cm-search{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:13px;margin:6px 0}
+  .cmmeta{display:flex;align-items:center;gap:14px;margin:2px 2px 0}
+  .likebtn{background:none;border:none;padding:2px;color:var(--dim);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+  .likebtn.on{color:var(--err)}
+  .loadcount{color:var(--dim);font-size:13px;font-weight:700}
   /* Saved lists: full-width cards (like the community board) instead of half-screen */
   #customs .list, #fx-list .list, #score-list .list{grid-template-columns:1fr}
   /* Saved-card actions share the row equally so Delete gets full room (4 buttons -> 1/4 each) */
@@ -317,6 +321,7 @@
       <select id="cm-sort" aria-label="Sort community board">
         <option value="created_at.desc">Newest</option>
         <option value="created_at.asc">Oldest</option>
+        <option value="likes.desc">Most liked</option>
         <option value="title.asc">Title A–Z</option>
         <option value="display_name.asc">Creator A–Z</option>
       </select>
@@ -3232,7 +3237,7 @@ async function cmShare(item){
 const CM_PAGE = 20;
 const cmState = { kind: "", sort: "created_at.desc", q: "", offset: 0, total: null, done: false, loading: false };
 async function cmFetchPage(offset){
-  let url = cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at" +
+  let url = cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at,likes,loads" +
     "&order=" + cmState.sort + ",id.asc&limit=" + CM_PAGE + "&offset=" + offset;
   if (cmState.kind) url += "&kind=eq." + cmState.kind;
   if (cmState.q) url += "&title=ilike.*" + encodeURIComponent(cmState.q) + "*";
@@ -3251,6 +3256,21 @@ async function cmDelete(id, secret){
   const r = await fetch(cmBase() + "/rest/v1/rpc/delete_creation", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_secret: secret }) });
   if (!r.ok){ const t = await r.text(); let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} throw new Error(msg); }
 }
+async function cmSetLike(id, liked){
+  const r = await fetch(cmBase() + "/rest/v1/rpc/set_like", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_liked: liked }) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const n = parseInt(await r.text(), 10); return isNaN(n) ? null : n;
+}
+async function cmRegisterLoad(id){
+  const r = await fetch(cmBase() + "/rest/v1/rpc/register_load", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id }) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const n = parseInt(await r.text(), 10); return isNaN(n) ? null : n;
+}
+/* One like per share per device — tracked locally; the server just adjusts the count. */
+const CM_LIKED = "mfs_liked_v1";
+function cmLikedMap(){ try { return JSON.parse(localStorage.getItem(CM_LIKED)) || {}; } catch (e){ return {}; } }
+function cmLikedHas(id){ return !!cmLikedMap()[id]; }
+function cmLikedSet(id, on){ const m = cmLikedMap(); if (on) m[id] = 1; else delete m[id]; try { localStorage.setItem(CM_LIKED, JSON.stringify(m)); } catch (e){} }
 function cmKind(kind){ return /score/i.test(kind) ? "score" : /fx/i.test(kind) ? "fx" : "theme"; }
 
 /* --- ↗ Share: post to the board (falls back to a play link) --- */
@@ -3305,10 +3325,35 @@ function cmMakeCard(it){
   b.innerHTML = '<div class="id">' + icon + " " + esc(kindLabel) + '</div>' +
                 '<div class="name">' + esc(it.title || "untitled") + '</div>' +
                 '<div class="info">by ' + esc(it.display_name || "Anonymous") + (when ? " · " + esc(when) : "") + '</div>';
-  b.addEventListener("click", () => loadSharedObject(it.payload));
+
+  // like (one per device) + load count
+  let likes = it.likes || 0, loads = it.loads || 0, liked = cmLikedHas(it.id), busy = false;
+  const meta = document.createElement("div"); meta.className = "cmmeta";
+  const likeBtn = document.createElement("button");
+  likeBtn.setAttribute("aria-label", "Like " + (it.title || ""));
+  const loadSpan = document.createElement("span"); loadSpan.className = "loadcount";
+  function paintLike(){ likeBtn.className = "likebtn" + (liked ? " on" : ""); likeBtn.textContent = (liked ? "♥" : "♡") + " " + likes; }
+  function paintLoads(){ loadSpan.textContent = "▶ " + loads; }
+  paintLike(); paintLoads();
+  likeBtn.addEventListener("click", async (ev) => {
+    ev.stopPropagation();
+    if (busy) return; busy = true;
+    liked = !liked; likes = Math.max(0, likes + (liked ? 1 : -1)); cmLikedSet(it.id, liked); paintLike();
+    try { const v = await cmSetLike(it.id, liked); if (typeof v === "number"){ likes = v; paintLike(); } }
+    catch (e){ liked = !liked; likes = Math.max(0, likes + (liked ? 1 : -1)); cmLikedSet(it.id, liked); paintLike(); }
+    finally { busy = false; }
+  });
+  meta.appendChild(likeBtn); meta.appendChild(loadSpan);
+
+  async function boardLoad(){
+    const ok = await loadSharedObject(it.payload);
+    if (ok){ loads += 1; paintLoads(); cmRegisterLoad(it.id).catch(() => {}); }
+  }
+  b.addEventListener("click", boardLoad);
+
   const acts = document.createElement("div"); acts.className = "acts";
   function mini(txt, label, fn){ const x = document.createElement("button"); x.className = "mini"; x.textContent = txt; x.setAttribute("aria-label", label); x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); return x; }
-  acts.appendChild(mini("▶ Load", "Load " + (it.title || ""), () => loadSharedObject(it.payload)));
+  acts.appendChild(mini("▶ Load", "Load " + (it.title || ""), boardLoad));
   acts.appendChild(mini("⬇ JSON", "Download " + (it.title || ""), () => downloadJSON(it.kind + "_" + ((it.payload && it.payload.id) || "shared") + ".json", it.payload)));
   const ownKey = ckName(it.display_name);
   if (ownKey && ckSecret(ownKey)){
@@ -3318,7 +3363,7 @@ function cmMakeCard(it){
       catch (e){ cmStatus("Couldn't delete: " + e.message, true); }
     }));
   }
-  wrap.appendChild(b); wrap.appendChild(acts);
+  wrap.appendChild(b); wrap.appendChild(meta); wrap.appendChild(acts);
   return wrap;
 }
 function cmCountLabel(){
