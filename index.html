@@ -257,8 +257,21 @@
         signature and instrument, tap piano keys to add notes, hear it as you go, export a WAV.</div>
       </button>
     </div>
-    <button class="fbtn" id="galleryBtn" style="margin-top:14px;width:100%">🌐 Community — share your creations</button>
+    <button class="fbtn" id="galleryBtn" style="margin-top:14px;width:100%">🌐 Community board — share &amp; browse creations</button>
     <div class="statusline" style="margin-top:10px"></div>
+  </div>
+
+  <div id="view-community" class="view" hidden>
+    <div class="vnav"><button class="fbtn" data-home>‹ Home</button><span>Community board</span></div>
+    <div class="hint">Everyone's shared creations. Tap a card (or <b>▶ Load</b>) to bring one into the app to play, edit or keep; <b>⬇ JSON</b> downloads the recipe. Your own posts show <b>✕ Delete</b>.</div>
+    <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+      <button class="fbtn" id="cm-refresh" style="flex:1 1 30%">↻ Refresh</button>
+      <button class="fbtn" id="cm-backup" style="flex:1 1 30%">⬇ Back up key</button>
+      <button class="fbtn" id="cm-restore" style="flex:1 1 30%">Restore key</button>
+      <input type="file" id="cm-restore-file" accept="application/json,.json" hidden>
+    </div>
+    <div class="statusline" id="cm-status" style="margin:10px 0"></div>
+    <div id="cm-list"></div>
   </div>
 
   <div id="view-forge" class="view" hidden>
@@ -2869,33 +2882,177 @@ function shareLink(obj){
   return location.origin + location.pathname + "#c=" + toB64url(JSON.stringify(obj));
 }
 
-async function galleryShare(kind, obj){
-  const link = shareLink(obj);
-  const nm = obj.name || obj.id || kind;
-  // Account-free sharing: hand off the self-contained play link. Whoever
-  // opens it can play or save this creation — no account, no server.
-  if (navigator.share){
-    try {
-      await navigator.share({ title: "Musical Forge Studio", text: "Play “" + nm + "” in Musical Forge Studio:", url: link });
-      setStatus(null, "Shared. Anyone who opens the link can play or save this " + kind + " — no account needed.");
-      return;
-    } catch (e){
-      if (e && e.name === "AbortError") return;   // share sheet dismissed
-      // otherwise fall through to clipboard
-    }
+/* ============================================================
+   COMMUNITY BOARD — a global, account-free gallery on Supabase.
+   ↗ Share posts a creation; anyone can browse, play and download it.
+   A device-held "creator key" (a random secret) claims a display name
+   first-come, so nobody else can post — or delete — under your name;
+   only a name's own device can delete its posts. No accounts, no email,
+   no personal data. Backend: supabase/schema.sql. Docs:
+   docs/community-board.md.
+   ============================================================ */
+const COMMUNITY = {
+  url: "https://zggckadrpivxadwtbffb.supabase.co",
+  key: "sb_publishable_2G92aiJIiNA_Zzx9NnZc2g_dt34Vj_I"
+};
+const CM_ON = !!(COMMUNITY.url && COMMUNITY.key);
+
+/* --- device creator identity: one random secret per claimed name --- */
+const CK_LS = "mfs_creator_identities_v1";
+function ckLoad(){ try { return JSON.parse(localStorage.getItem(CK_LS)) || {}; } catch (e){ return {}; } }
+function ckSave(m){ try { localStorage.setItem(CK_LS, JSON.stringify(m)); } catch (e){} }
+function ckName(name){ return String(name == null ? "" : name).trim().toLowerCase(); }
+function ckSecret(nameKey){ return ckLoad()[nameKey] || null; }
+function ckEnsure(nameKey){
+  const m = ckLoad();
+  if (!m[nameKey]){
+    const b = new Uint8Array(32); crypto.getRandomValues(b);
+    let s = ""; b.forEach(x => { s += String.fromCharCode(x); });
+    m[nameKey] = btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    ckSave(m);
   }
-  if (navigator.clipboard && navigator.clipboard.writeText){
-    try {
-      await navigator.clipboard.writeText(link);
-      setStatus(null, "Play link copied — paste it anywhere. Anyone who opens it can play or save this " + kind + ", no account needed.");
-      return;
-    } catch (e){ /* fall through to manual copy */ }
-  }
-  window.prompt("Copy this play-in-app link and share it with anyone:", link);
+  return m[nameKey];
 }
-document.getElementById("galleryBtn").addEventListener("click", () => {
-  window.alert("Community sharing\n\nOpen any saved Theme, FX preset, or Score and tap ↗ Share to get a play-in-app link. Send it to anyone, anywhere — they open the link and the app loads your creation, ready to play or save. No account, no sign-in, nothing to install.");
+
+/* --- Supabase REST (publishable key; safe to ship) --- */
+function cmHeaders(){ return { "apikey": COMMUNITY.key, "Authorization": "Bearer " + COMMUNITY.key, "Content-Type": "application/json" }; }
+function cmBase(){ return COMMUNITY.url.replace(/\/+$/, ""); }
+async function cmShare(item){
+  const name = item.name ? String(item.name).slice(0, 40) : "";
+  const key = ckName(name);
+  const secret = key ? ckEnsure(key) : "";
+  const r = await fetch(cmBase() + "/rest/v1/rpc/share_creation", {
+    method: "POST", headers: cmHeaders(),
+    body: JSON.stringify({ p_name: name, p_secret: secret, p_kind: item.kind,
+      p_title: String(item.title || "untitled").slice(0, 80), p_payload: item.payload })
+  });
+  const t = await r.text();
+  if (!r.ok){ let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} const err = new Error(msg); err.nameTaken = /already taken/i.test(msg); throw err; }
+  return t.replace(/^"|"$/g, "");
+}
+async function cmFetch(limit){
+  const r = await fetch(cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at&order=created_at.desc&limit=" + (limit || 100), { headers: cmHeaders() });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function cmDelete(id, secret){
+  const r = await fetch(cmBase() + "/rest/v1/rpc/delete_creation", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_secret: secret }) });
+  if (!r.ok){ const t = await r.text(); let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} throw new Error(msg); }
+}
+function cmKind(kind){ return /score/i.test(kind) ? "score" : /fx/i.test(kind) ? "fx" : "theme"; }
+
+/* --- ↗ Share: post to the board (falls back to a play link) --- */
+async function galleryShare(kind, obj){
+  if (!CM_ON) return galleryShareLink(kind, obj);
+  let name = localStorage.getItem("mfs_display_name") || "";
+  name = window.prompt("Post “" + (obj.name || obj.id || kind) + "” to the community board.\n\nShow it under what name? (leave blank to post anonymously)", name);
+  if (name === null) return;                       // cancelled
+  name = name.trim().slice(0, 40);
+  localStorage.setItem("mfs_display_name", name);
+  setStatus(null, "Posting to the community board…");
+  try {
+    await cmShare({ name: name, kind: cmKind(kind), title: obj.name || obj.id || kind, payload: obj });
+    setStatus(null, (name ? "Posted as “" + esc(name) + "”" : "Posted anonymously") + " — open 🌐 Community board to see it.");
+  } catch (e){
+    if (e.nameTaken){
+      setStatus("The name “" + esc(name) + "” is already taken by another device — tap ↗ Share again and pick a different name.");
+      return;
+    }
+    setStatus("Couldn't reach the community board (" + esc(e.message) + "). Copying a play link instead.");
+    galleryShareLink(kind, obj);
+  }
+}
+/* account-free play link — fallback, and used when the board is off */
+async function galleryShareLink(kind, obj){
+  const link = shareLink(obj);
+  if (navigator.share){ try { await navigator.share({ title: "Musical Forge Studio", url: link }); return; } catch (e){ if (e && e.name === "AbortError") return; } }
+  if (navigator.clipboard && navigator.clipboard.writeText){ try { await navigator.clipboard.writeText(link); setStatus(null, "Play link copied — anyone who opens it can play or save this " + kind + "."); return; } catch (e){} }
+  window.prompt("Copy this play-in-app link:", link);
+}
+
+/* --- the board view --- */
+const cmListEl = document.getElementById("cm-list");
+function cmStatus(msg, isErr){ const el = document.getElementById("cm-status"); if (el) el.innerHTML = isErr ? '<span class="err">' + esc(msg) + "</span>" : esc(msg); }
+function cmRender(items){
+  cmListEl.innerHTML = "";
+  const grid = document.createElement("div"); grid.className = "list";
+  items.forEach(it => {
+    const wrap = document.createElement("div"); wrap.className = "cwrap";
+    const b = document.createElement("button"); b.className = "trk";
+    const kindLabel = it.kind === "fx" ? "FX preset" : it.kind;
+    b.innerHTML = '<div class="id">' + esc(kindLabel) + '</div>' +
+                  '<div class="name">' + esc(it.title || "untitled") + '</div>' +
+                  '<div class="info">by ' + esc(it.display_name || "Anonymous") + '</div>';
+    b.addEventListener("click", () => loadSharedObject(it.payload));
+    const acts = document.createElement("div"); acts.className = "acts";
+    function mini(txt, label, fn){ const x = document.createElement("button"); x.className = "mini"; x.textContent = txt; x.setAttribute("aria-label", label); x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); return x; }
+    acts.appendChild(mini("▶ Load", "Load " + (it.title || ""), () => loadSharedObject(it.payload)));
+    acts.appendChild(mini("⬇ JSON", "Download " + (it.title || ""), () => downloadJSON(it.kind + "_" + ((it.payload && it.payload.id) || "shared") + ".json", it.payload)));
+    const ownKey = ckName(it.display_name);
+    if (ownKey && ckSecret(ownKey)){
+      acts.appendChild(mini("✕ Delete", "Delete " + (it.title || ""), async () => {
+        if (!window.confirm("Delete “" + (it.title || "untitled") + "” from the community board?")) return;
+        try { await cmDelete(it.id, ckSecret(ownKey)); loadBoard(); }
+        catch (e){ cmStatus("Couldn't delete: " + e.message, true); }
+      }));
+    }
+    wrap.appendChild(b); wrap.appendChild(acts); grid.appendChild(wrap);
+  });
+  cmListEl.appendChild(grid);
+}
+async function loadBoard(){
+  if (!CM_ON){ cmStatus("The community board isn't configured.", true); return; }
+  cmStatus("Loading the community board…");
+  try {
+    const items = await cmFetch(100);
+    if (!items.length){ cmListEl.innerHTML = ""; cmStatus("No creations shared yet — open a saved item and tap ↗ Share to be the first."); return; }
+    cmStatus(items.length + " shared creation" + (items.length === 1 ? "" : "s") + ".");
+    cmRender(items);
+  } catch (e){
+    cmListEl.innerHTML = "";
+    cmStatus("Couldn't load the community board: " + e.message, true);
+  }
+}
+document.getElementById("galleryBtn").addEventListener("click", () => { showView("view-community"); loadBoard(); });
+$("cm-refresh").addEventListener("click", loadBoard);
+$("cm-backup").addEventListener("click", () => {
+  downloadBlob("musical-forge-creator-key.json", new Blob([JSON.stringify({ type: "mfs-creator-keys", keys: ckLoad() }, null, 2)], { type: "application/json" }));
+  cmStatus("Creator key backed up — keep this file safe; it's the only way to use your names on another device.");
 });
+$("cm-restore").addEventListener("click", () => $("cm-restore-file").click());
+$("cm-restore-file").addEventListener("change", (ev) => {
+  const file = ev.target.files && ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || data.type !== "mfs-creator-keys" || typeof data.keys !== "object") throw new Error("not a creator-key backup file");
+      const m = ckLoad(); let added = 0;
+      Object.keys(data.keys).forEach(k => { if (!m[k] && typeof data.keys[k] === "string"){ m[k] = data.keys[k]; added++; } });
+      ckSave(m);
+      cmStatus("Restored " + added + " creator name" + (added === 1 ? "" : "s") + "."); loadBoard();
+    } catch (e){ cmStatus("Couldn't restore: " + e.message, true); }
+    ev.target.value = "";
+  };
+  reader.readAsText(file);
+});
+
+/* Load one shared creation into the app (from a link or a board card). */
+async function loadSharedObject(obj){
+  const kind = classifyShared(obj);
+  if (!kind){ setStatus("That isn't a valid theme, FX preset, or score."); return false; }
+  const label = kind === "fx" ? "FX preset" : kind;
+  const nm = String(obj.name || obj.id || "untitled").slice(0, 80);
+  if (!window.confirm("Load " + label + " “" + nm + "” into your library on this device?")){
+    setStatus(null, label + " not loaded."); return false;
+  }
+  const r = await importItems([obj]);
+  showView(kind === "score" ? "view-score" : kind === "fx" ? "view-remix" : "view-forge");
+  setStatus(null, (r.themes || r.fx || r.scores)
+    ? "Loaded " + label + " “" + esc(nm) + "” — press ▶ to play, or keep it."
+    : "You already have that " + label + " — it's in your list.");
+  return true;
+}
 
 /* If the page was opened with a "#c=<encoded recipe>" link, load that one
    creation. Runs only after saved data has loaded (so dedup is correct and
@@ -2915,25 +3072,7 @@ async function handleShareLink(){
     setStatus("That shared link couldn't be read.");
     return;
   }
-  const kind = classifyShared(obj);
-  if (!kind){
-    setStatus("That shared link isn't a valid theme, FX preset, or score.");
-    return;
-  }
-  const label = kind === "fx" ? "FX preset" : kind;
-  const nm = String(obj.name || obj.id || "untitled").slice(0, 80);
-  // Consent: never write to a visitor's library without asking.
-  if (!window.confirm("Load shared " + label + " “" + nm + "” into your library on this device?")){
-    setStatus(null, "Shared " + label + " not loaded.");
-    return;
-  }
-  const r = await importItems([obj]);
-  showView(kind === "score" ? "view-score" : kind === "fx" ? "view-remix" : "view-forge");
-  if (!(r.themes || r.fx || r.scores)){
-    setStatus(null, "You already have that " + label + " — it's in your list below.");
-  } else {
-    setStatus(null, "Loaded shared " + label + " “" + esc(nm) + "” into your list below — press ▶ to play, or keep it.");
-  }
+  await loadSharedObject(obj);
 }
 Promise.all([customsReady, fxReady, scoresReady]).then(handleShareLink, handleShareLink);
 // Also handle a link opened while the app is already running.
