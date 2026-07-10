@@ -185,6 +185,10 @@
   #cm-sort{margin-left:auto;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px}
   /* Saved lists: full-width cards (like the community board) instead of half-screen */
   #customs .list, #fx-list .list, #score-list .list{grid-template-columns:1fr}
+  /* Saved-card actions share the row equally so Delete gets full room (4 buttons -> 1/4 each) */
+  #customs .acts .mini, #customs .acts .mini:last-child,
+  #fx-list .acts .mini, #fx-list .acts .mini:last-child,
+  #score-list .acts .mini, #score-list .acts .mini:last-child{flex:1 1 0;font-size:11px;padding:10px 4px}
   @media (min-width:760px){
     .btn, .fbtn{ font-size:14px; padding:15px 26px; }
     .durbtn{ min-width:60px; padding:13px 12px; }
