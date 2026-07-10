@@ -120,6 +120,33 @@ $$;
 revoke all on function public.share_creation(text,text,text,text,jsonb) from public;
 grant execute on function public.share_creation(text,text,text,text,jsonb) to anon, authenticated;
 
+-- --- owner delete -----------------------------------------------------------
+-- A creation can be deleted only by the device that holds its name's secret
+-- (i.e. the poster). Anonymous posts have no owner and can only be removed from
+-- the dashboard. This powers the in-app "✕ Delete" on your own board cards.
+create or replace function public.delete_creation(p_id uuid, p_secret text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_hash text := encode(digest(coalesce(p_secret,''), 'sha256'), 'hex');
+begin
+  delete from public.creations c
+   using public.names n
+   where c.id = p_id
+     and c.name_key = n.name_key
+     and n.secret_hash = v_hash;
+  if not found then
+    raise exception 'not allowed to delete this creation';
+  end if;
+end;
+$$;
+
+revoke all on function public.delete_creation(uuid, text) from public;
+grant execute on function public.delete_creation(uuid, text) to anon, authenticated;
+
 -- ============================================================================
 -- Moderation (you, in the Supabase dashboard):
 --   delete a creation:  delete from public.creations where id = '<uuid>';

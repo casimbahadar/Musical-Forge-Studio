@@ -6,9 +6,13 @@ have shared. No comments, no reactions, no profiles (yet). Names are shown
 beside titles and are **impersonation-resistant** without logins or personal
 data.
 
-Status: **backend + client module drafted and verified in isolation. Not yet
-wired into `index.html`** — that happens in one focused pass once the Supabase
-project exists (see "Go live").
+Status: **wired into `index.html` and verified locally** (board render, Share →
+`share_creation`, owner-only `delete_creation`, load-from-card). The one thing
+not verifiable in the build environment is the **live Supabase round-trip**
+(egress policy blocks `*.supabase.co`), so that is confirmed on the deployed
+GitHub Pages site. The `↗ Share` button posts to the board; the home **🌐
+Community board** button browses it; each card can be played, downloaded, and —
+if it's one of your own posts — deleted.
 
 ---
 
