@@ -183,6 +183,8 @@
   .chip{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em}
   .chip.on{background:var(--panel2);border-color:var(--moon);color:var(--moon)}
   #cm-sort{margin-left:auto;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px}
+  /* Saved lists: full-width cards (like the community board) instead of half-screen */
+  #customs .list, #fx-list .list, #score-list .list{grid-template-columns:1fr}
   @media (min-width:760px){
     .btn, .fbtn{ font-size:14px; padding:15px 26px; }
     .durbtn{ min-width:60px; padding:13px 12px; }
@@ -366,14 +368,17 @@
       <b>Import JSON</b> reads recipe files back in — it accepts theme recipes, Remix-Lab FX
       presets, and Score Composer scores, even mixed in one file, and sorts each to the right
       place.</p>
-      <p><b>↗ Share</b> on any saved card creates a <b>play-in-app link</b> for that creation and
-      offers it to your share sheet (or copies it). Send it to anyone, anywhere — they open the
-      link and the app loads your creation, ready to play or save. No account, no sign-in, nothing
-      to install; whoever opens it is asked before anything is saved to their device.</p>
+      <p><b>↗ Share</b> on any saved card posts it to the <b>🌐 Community board</b> — a global
+      gallery everyone using the app can browse, play and download. You pick a display name (kept
+      for next time; leave it blank to post anonymously), and a device-held key means only you can
+      post or delete under that name — no account, no sign-in. Open <b>🌐 Community board</b> from
+      the home screen to browse everyone's creations, filter by type and sort.</p>
       <p>The <b>Remix Lab</b> and <b>Score Composer</b> pages have their own guides just like this
       one — look for the 🎚 and 🎼 panels there.</p>
     </div>
   </details>
+
+  <div id="lists"></div>
 
   <div class="forge">
     <h2>Theme Forge</h2>
@@ -457,8 +462,6 @@
   
 
   <div id="customs"></div>
-
-  <div id="lists"></div>
 
   
   <div class="foot">
@@ -569,9 +572,10 @@
           Bit crush + High cut = retro handheld; both filters toward the middle = old radio;
           Echo repeats high = dub tails.</p>
           <p><b>Your remix presets</b> (below the Lab, after your first save): tap a card to snap
-          all sliders to those settings — even while music plays. <b>⬇ JSON</b> downloads a preset
-          to share or back up; the <b>Import JSON</b> button on the Theme Forge page reads them
-          back in. <b>✕</b> deletes.</p>
+          all sliders to those settings — even while music plays. <b>↗ Share</b> posts the preset to
+          the <b>🌐 Community board</b> (a global gallery — pick a display name, or post
+          anonymously); <b>⬇ JSON</b> downloads it to back up or share as a file, and the
+          <b>Import JSON</b> button on the Theme Forge page reads presets back in. <b>✕</b> deletes.</p>
           <p><b>Loop</b> is on by default so the track keeps going while you experiment —
           that's the fastest way to learn what every slider does.</p>
         </div>
@@ -631,9 +635,10 @@
         as a PNG image — with your title on top — ready to print or share. <b>Save</b> keeps it in <b>Your scores</b> below —
         stored on this device.</p>
         <p><b>Your scores</b> cards show the instrument, note count and length. Tap one to load it
-        back into the editor and keep working; <b>⬇ JSON</b> downloads it as a small file you can
-        share — anyone can bring it in through <b>Import JSON</b> on the Theme Forge page and get
-        your exact score, editable. <b>✕</b> deletes.</p>
+        back into the editor and keep working. <b>↗ Share</b> posts the score to the <b>🌐 Community
+        board</b> (a global gallery — pick a display name, or post anonymously), where anyone can
+        play, download or keep it. <b>⬇ JSON</b> downloads it as a file, readable back via <b>Import
+        JSON</b> on the Theme Forge page. <b>✕</b> deletes.</p>
         <p><b>If something sounds wrong:</b> tap the note, check its octave (a right melody in the
         wrong octave sounds off), or ↩ Undo your way back. There's no wrong way to use this —
         the fastest way to learn is to add five random notes and press Play.</p>
