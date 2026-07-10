@@ -257,6 +257,7 @@
     background:var(--panel2);color:var(--ink);font-family:inherit;font-size:17px;cursor:pointer;line-height:1}
   .durbtn.on{border-color:var(--moon);color:var(--moon)}
   .durbtn.small{font-size:11px;font-weight:700;padding:11px 10px}
+  .durlbl{display:block;font-size:9px;font-weight:700;line-height:1;margin-top:3px;letter-spacing:.02em;white-space:nowrap}
   .durrow select{background:var(--panel2);border:1px solid var(--line);border-radius:7px;
     color:var(--ink);font-family:inherit;font-size:12px;padding:9px}
   .piano{position:relative;height:120px;display:flex;gap:2px;margin-bottom:12px}
@@ -2831,6 +2832,20 @@ document.querySelectorAll('.durbtn[data-r]').forEach(b =>
     } else { SCORE.notes.push({ rest: true, d }); scPage = 1e9; }
     renderStaff();
   }));
+
+/* Add a plain-language length label under each note/rest icon. */
+(function labelDurations(){
+  const DUR_LABEL = { "4": "Whole", "2": "Half", "1": "Quarter", "0.5": "Eighth", "0.25": "16th" };
+  document.querySelectorAll(".durbtn[data-d], .durbtn[data-r]").forEach(b => {
+    const key = b.dataset.d != null ? b.dataset.d : b.dataset.r;
+    const label = DUR_LABEL[key];
+    if (label && !b.querySelector(".durlbl")){
+      const s = document.createElement("span");
+      s.className = "durlbl"; s.textContent = label;
+      b.appendChild(s);
+    }
+  });
+})();
 $("sc-sharp").addEventListener("click", () => {
   accPref = "#";
   $("sc-sharp").classList.add("on"); $("sc-flat").classList.remove("on");
