@@ -179,6 +179,10 @@
   #cm-list .trk .id{font-size:12px}
   #cm-list .trk .name{font-size:20px;margin-top:6px}
   #cm-list .trk .info{font-size:13px;margin-top:6px}
+  .cm-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}
+  .chip{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em}
+  .chip.on{background:var(--panel2);border-color:var(--moon);color:var(--moon)}
+  #cm-sort{margin-left:auto;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px}
   @media (min-width:760px){
     .btn, .fbtn{ font-size:14px; padding:15px 26px; }
     .durbtn{ min-width:60px; padding:13px 12px; }
@@ -277,6 +281,18 @@
       <button class="fbtn" id="cm-backup" style="flex:1 1 30%">⬇ Back up key</button>
       <button class="fbtn" id="cm-restore" style="flex:1 1 30%">Restore key</button>
       <input type="file" id="cm-restore-file" accept="application/json,.json" hidden>
+    </div>
+    <div class="cm-filters">
+      <button class="chip on" data-kind="">All</button>
+      <button class="chip" data-kind="theme">🎛 Themes</button>
+      <button class="chip" data-kind="fx">🎚 FX</button>
+      <button class="chip" data-kind="score">🎼 Scores</button>
+      <select id="cm-sort" aria-label="Sort community board">
+        <option value="created_at.desc">Newest</option>
+        <option value="created_at.asc">Oldest</option>
+        <option value="title.asc">Title A–Z</option>
+        <option value="display_name.asc">Creator A–Z</option>
+      </select>
     </div>
     <div class="statusline" id="cm-status" style="margin:10px 0"></div>
     <div id="cm-list"></div>
@@ -2938,9 +2954,21 @@ async function cmShare(item){
   if (!r.ok){ let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} const err = new Error("HTTP " + r.status + (msg ? ": " + msg : "")); err.nameTaken = /already taken/i.test(msg); throw err; }
   return t.replace(/^"|"$/g, "");
 }
-async function cmFetch(limit){
-  const r = await fetch(cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at&order=created_at.desc&limit=" + (limit || 100), { headers: cmHeaders() });
+const CM_PAGE = 20;
+const cmState = { kind: "", sort: "created_at.desc", offset: 0, total: null, done: false, loading: false };
+async function cmFetchPage(offset){
+  let url = cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at" +
+    "&order=" + cmState.sort + ",id.asc&limit=" + CM_PAGE + "&offset=" + offset;
+  if (cmState.kind) url += "&kind=eq." + cmState.kind;
+  const headers = cmHeaders();
+  if (offset === 0) headers["Prefer"] = "count=exact";   // total row count (via Content-Range) on the first page
+  const r = await fetch(url, { headers });
   if (!r.ok) throw new Error("HTTP " + r.status);
+  if (offset === 0){
+    const cr = r.headers.get("content-range");           // e.g. "0-19/137" — may be hidden by CORS; degrade gracefully
+    const tot = cr ? cr.split("/")[1] : null;
+    cmState.total = (tot && tot !== "*") ? parseInt(tot, 10) : null;
+  }
   return r.json();
 }
 async function cmDelete(id, secret){
@@ -2981,48 +3009,80 @@ async function galleryShareLink(kind, obj){
 /* --- the board view --- */
 const cmListEl = document.getElementById("cm-list");
 function cmStatus(msg, isErr){ const el = document.getElementById("cm-status"); if (el) el.innerHTML = isErr ? '<span class="err">' + esc(msg) + "</span>" : esc(msg); }
-function cmRender(items){
-  cmListEl.innerHTML = "";
-  const grid = document.createElement("div"); grid.className = "list";
-  items.forEach(it => {
-    const wrap = document.createElement("div"); wrap.className = "cwrap";
-    const b = document.createElement("button"); b.className = "trk";
-    const kindLabel = it.kind === "fx" ? "FX preset" : it.kind;
-    b.innerHTML = '<div class="id">' + esc(kindLabel) + '</div>' +
-                  '<div class="name">' + esc(it.title || "untitled") + '</div>' +
-                  '<div class="info">by ' + esc(it.display_name || "Anonymous") + '</div>';
-    b.addEventListener("click", () => loadSharedObject(it.payload));
-    const acts = document.createElement("div"); acts.className = "acts";
-    function mini(txt, label, fn){ const x = document.createElement("button"); x.className = "mini"; x.textContent = txt; x.setAttribute("aria-label", label); x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); return x; }
-    acts.appendChild(mini("▶ Load", "Load " + (it.title || ""), () => loadSharedObject(it.payload)));
-    acts.appendChild(mini("⬇ JSON", "Download " + (it.title || ""), () => downloadJSON(it.kind + "_" + ((it.payload && it.payload.id) || "shared") + ".json", it.payload)));
-    const ownKey = ckName(it.display_name);
-    if (ownKey && ckSecret(ownKey)){
-      acts.appendChild(mini("✕ Delete", "Delete " + (it.title || ""), async () => {
-        if (!window.confirm("Delete “" + (it.title || "untitled") + "” from the community board?")) return;
-        try { await cmDelete(it.id, ckSecret(ownKey)); loadBoard(); }
-        catch (e){ cmStatus("Couldn't delete: " + e.message, true); }
-      }));
-    }
-    wrap.appendChild(b); wrap.appendChild(acts); grid.appendChild(wrap);
-  });
-  cmListEl.appendChild(grid);
-}
-async function loadBoard(){
-  if (!CM_ON){ cmStatus("The community board isn't configured.", true); return; }
-  cmStatus("Loading the community board…");
-  try {
-    const items = await cmFetch(100);
-    if (!items.length){ cmListEl.innerHTML = ""; cmStatus("No creations shared yet — open a saved item and tap ↗ Share to be the first."); return; }
-    cmStatus(items.length + " shared creation" + (items.length === 1 ? "" : "s") + ".");
-    cmRender(items);
-  } catch (e){
-    cmListEl.innerHTML = "";
-    cmStatus("Couldn't load the community board: " + e.message, true);
+function cmMakeCard(it){
+  const wrap = document.createElement("div"); wrap.className = "cwrap";
+  const b = document.createElement("button"); b.className = "trk";
+  const kindLabel = it.kind === "fx" ? "FX preset" : it.kind;
+  b.innerHTML = '<div class="id">' + esc(kindLabel) + '</div>' +
+                '<div class="name">' + esc(it.title || "untitled") + '</div>' +
+                '<div class="info">by ' + esc(it.display_name || "Anonymous") + '</div>';
+  b.addEventListener("click", () => loadSharedObject(it.payload));
+  const acts = document.createElement("div"); acts.className = "acts";
+  function mini(txt, label, fn){ const x = document.createElement("button"); x.className = "mini"; x.textContent = txt; x.setAttribute("aria-label", label); x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); return x; }
+  acts.appendChild(mini("▶ Load", "Load " + (it.title || ""), () => loadSharedObject(it.payload)));
+  acts.appendChild(mini("⬇ JSON", "Download " + (it.title || ""), () => downloadJSON(it.kind + "_" + ((it.payload && it.payload.id) || "shared") + ".json", it.payload)));
+  const ownKey = ckName(it.display_name);
+  if (ownKey && ckSecret(ownKey)){
+    acts.appendChild(mini("✕ Delete", "Delete " + (it.title || ""), async () => {
+      if (!window.confirm("Delete “" + (it.title || "untitled") + "” from the community board?")) return;
+      try { await cmDelete(it.id, ckSecret(ownKey)); loadBoard(); }
+      catch (e){ cmStatus("Couldn't delete: " + e.message, true); }
+    }));
   }
+  wrap.appendChild(b); wrap.appendChild(acts);
+  return wrap;
+}
+function cmCountLabel(){
+  const noun = (cmState.kind === "fx" ? "FX preset" : cmState.kind || "creation") + "s";
+  return cmState.total != null
+    ? "Showing " + cmState.offset + " of " + cmState.total + " " + noun + "."
+    : "Showing " + cmState.offset + " " + noun + ".";
+}
+let cmGrid = null, cmSentinel = null, cmObserver = null;
+async function cmLoadMore(){
+  if (!CM_ON || cmState.loading || cmState.done) return;
+  cmState.loading = true;
+  try {
+    const items = await cmFetchPage(cmState.offset);
+    items.forEach(it => cmGrid.appendChild(cmMakeCard(it)));
+    cmState.offset += items.length;
+    if (items.length < CM_PAGE) cmState.done = true;
+    if (cmState.offset === 0){
+      cmStatus(cmState.kind ? "Nothing shared in this category yet." : "No creations shared yet — open a saved item and tap ↗ Share to be the first.");
+    } else {
+      cmStatus(cmCountLabel());
+    }
+    if (cmSentinel) cmSentinel.style.display = cmState.done ? "none" : "";
+  } catch (e){
+    cmState.done = true;
+    if (cmSentinel) cmSentinel.style.display = "none";
+    if (cmState.offset === 0) cmStatus("Couldn't load the community board: " + e.message, true);
+  } finally {
+    cmState.loading = false;
+  }
+}
+function loadBoard(){
+  if (!CM_ON){ cmStatus("The community board isn't configured.", true); return; }
+  cmState.offset = 0; cmState.total = null; cmState.done = false; cmState.loading = false;
+  cmListEl.innerHTML = "";
+  cmGrid = document.createElement("div"); cmGrid.className = "list";
+  cmSentinel = document.createElement("div"); cmSentinel.style.height = "1px";
+  cmListEl.appendChild(cmGrid); cmListEl.appendChild(cmSentinel);
+  cmStatus("Loading…");
+  if (!cmObserver && "IntersectionObserver" in window){
+    cmObserver = new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) cmLoadMore(); }, { rootMargin: "400px" });
+  }
+  if (cmObserver){ cmObserver.disconnect(); cmObserver.observe(cmSentinel); }
+  cmLoadMore();
 }
 document.getElementById("galleryBtn").addEventListener("click", () => { showView("view-community"); loadBoard(); });
 $("cm-refresh").addEventListener("click", loadBoard);
+document.querySelectorAll("#view-community .chip").forEach(ch => ch.addEventListener("click", () => {
+  document.querySelectorAll("#view-community .chip").forEach(c => c.classList.toggle("on", c === ch));
+  cmState.kind = ch.dataset.kind || "";
+  loadBoard();
+}));
+$("cm-sort").addEventListener("change", () => { cmState.sort = $("cm-sort").value; loadBoard(); });
 $("cm-backup").addEventListener("click", () => {
   downloadBlob("musical-forge-creator-key.json", new Blob([JSON.stringify({ type: "mfs-creator-keys", keys: ckLoad() }, null, 2)], { type: "application/json" }));
   cmStatus("Creator key backed up — keep this file safe; it's the only way to use your names on another device.");
