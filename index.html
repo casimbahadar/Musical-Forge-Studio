@@ -183,6 +183,7 @@
   .chip{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em}
   .chip.on{background:var(--panel2);border-color:var(--moon);color:var(--moon)}
   #cm-sort{margin-left:auto;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:12px}
+  #cm-search{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-size:13px;margin:6px 0}
   /* Saved lists: full-width cards (like the community board) instead of half-screen */
   #customs .list, #fx-list .list, #score-list .list{grid-template-columns:1fr}
   /* Saved-card actions share the row equally so Delete gets full room (4 buttons -> 1/4 each) */
@@ -288,6 +289,7 @@
       <button class="fbtn" id="cm-restore" style="flex:1 1 30%">Restore key</button>
       <input type="file" id="cm-restore-file" accept="application/json,.json" hidden>
     </div>
+    <input type="search" id="cm-search" placeholder="Search titles — e.g. boss, battle, calm" aria-label="Search the community board">
     <div class="cm-filters">
       <button class="chip on" data-kind="">All</button>
       <button class="chip" data-kind="theme">🎛 Themes</button>
@@ -2964,11 +2966,12 @@ async function cmShare(item){
   return t.replace(/^"|"$/g, "");
 }
 const CM_PAGE = 20;
-const cmState = { kind: "", sort: "created_at.desc", offset: 0, total: null, done: false, loading: false };
+const cmState = { kind: "", sort: "created_at.desc", q: "", offset: 0, total: null, done: false, loading: false };
 async function cmFetchPage(offset){
   let url = cmBase() + "/rest/v1/creations?select=id,display_name,kind,title,payload,created_at" +
     "&order=" + cmState.sort + ",id.asc&limit=" + CM_PAGE + "&offset=" + offset;
   if (cmState.kind) url += "&kind=eq." + cmState.kind;
+  if (cmState.q) url += "&title=ilike.*" + encodeURIComponent(cmState.q) + "*";
   const headers = cmHeaders();
   if (offset === 0) headers["Prefer"] = "count=exact";   // total row count (via Content-Range) on the first page
   const r = await fetch(url, { headers });
@@ -3018,13 +3021,26 @@ async function galleryShareLink(kind, obj){
 /* --- the board view --- */
 const cmListEl = document.getElementById("cm-list");
 function cmStatus(msg, isErr){ const el = document.getElementById("cm-status"); if (el) el.innerHTML = isErr ? '<span class="err">' + esc(msg) + "</span>" : esc(msg); }
+function relTime(iso){
+  const t = iso ? Date.parse(iso) : NaN;
+  if (isNaN(t)) return "";
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 45) return "just now";
+  const m = s / 60; if (m < 60) return Math.round(m) + "m ago";
+  const h = m / 60; if (h < 24) return Math.round(h) + "h ago";
+  const d = h / 24; if (d < 30) return Math.round(d) + "d ago";
+  const mo = d / 30; if (mo < 12) return Math.round(mo) + "mo ago";
+  return Math.round(mo / 12) + "y ago";
+}
 function cmMakeCard(it){
   const wrap = document.createElement("div"); wrap.className = "cwrap";
   const b = document.createElement("button"); b.className = "trk";
   const kindLabel = it.kind === "fx" ? "FX preset" : it.kind;
-  b.innerHTML = '<div class="id">' + esc(kindLabel) + '</div>' +
+  const icon = it.kind === "score" ? "🎼" : it.kind === "fx" ? "🎚" : "🎛";
+  const when = relTime(it.created_at);
+  b.innerHTML = '<div class="id">' + icon + " " + esc(kindLabel) + '</div>' +
                 '<div class="name">' + esc(it.title || "untitled") + '</div>' +
-                '<div class="info">by ' + esc(it.display_name || "Anonymous") + '</div>';
+                '<div class="info">by ' + esc(it.display_name || "Anonymous") + (when ? " · " + esc(when) : "") + '</div>';
   b.addEventListener("click", () => loadSharedObject(it.payload));
   const acts = document.createElement("div"); acts.className = "acts";
   function mini(txt, label, fn){ const x = document.createElement("button"); x.className = "mini"; x.textContent = txt; x.setAttribute("aria-label", label); x.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); return x; }
@@ -3057,7 +3073,9 @@ async function cmLoadMore(){
     cmState.offset += items.length;
     if (items.length < CM_PAGE) cmState.done = true;
     if (cmState.offset === 0){
-      cmStatus(cmState.kind ? "Nothing shared in this category yet." : "No creations shared yet — open a saved item and tap ↗ Share to be the first.");
+      cmStatus(cmState.q ? "No creations match “" + cmState.q + "”."
+        : cmState.kind ? "Nothing shared in this category yet."
+        : "No creations shared yet — open a saved item and tap ↗ Share to be the first.");
     } else {
       cmStatus(cmCountLabel());
     }
@@ -3092,6 +3110,12 @@ document.querySelectorAll("#view-community .chip").forEach(ch => ch.addEventList
   loadBoard();
 }));
 $("cm-sort").addEventListener("change", () => { cmState.sort = $("cm-sort").value; loadBoard(); });
+let cmSearchT = null;
+$("cm-search").addEventListener("input", () => {
+  clearTimeout(cmSearchT);
+  const v = $("cm-search").value.trim();
+  cmSearchT = setTimeout(() => { cmState.q = v; loadBoard(); }, 300);
+});
 $("cm-backup").addEventListener("click", () => {
   downloadBlob("musical-forge-creator-key.json", new Blob([JSON.stringify({ type: "mfs-creator-keys", keys: ckLoad() }, null, 2)], { type: "application/json" }));
   cmStatus("Creator key backed up — keep this file safe; it's the only way to use your names on another device.");
