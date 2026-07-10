@@ -64,7 +64,7 @@ create or replace function public.share_creation(
 ) returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_disp text := btrim(coalesce(p_name, ''));
@@ -128,7 +128,7 @@ create or replace function public.delete_creation(p_id uuid, p_secret text)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text := encode(digest(coalesce(p_secret,''), 'sha256'), 'hex');
