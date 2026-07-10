@@ -2927,7 +2927,7 @@ async function cmShare(item){
       p_title: String(item.title || "untitled").slice(0, 80), p_payload: item.payload })
   });
   const t = await r.text();
-  if (!r.ok){ let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} const err = new Error(msg); err.nameTaken = /already taken/i.test(msg); throw err; }
+  if (!r.ok){ let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} const err = new Error("HTTP " + r.status + (msg ? ": " + msg : "")); err.nameTaken = /already taken/i.test(msg); throw err; }
   return t.replace(/^"|"$/g, "");
 }
 async function cmFetch(limit){
@@ -2958,8 +2958,8 @@ async function galleryShare(kind, obj){
       setStatus("The name “" + esc(name) + "” is already taken by another device — tap ↗ Share again and pick a different name.");
       return;
     }
-    setStatus("Couldn't reach the community board (" + esc(e.message) + "). Copying a play link instead.");
-    galleryShareLink(kind, obj);
+    // Show the real error rather than masking it; the creation is untouched.
+    setStatus("Couldn't post to the community board — " + esc(e.message) + ". Your creation is safe; try again, or use its ⬇ JSON to share it.");
   }
 }
 /* account-free play link — fallback, and used when the board is off */
