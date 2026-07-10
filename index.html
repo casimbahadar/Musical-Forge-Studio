@@ -1,4 +1,22 @@
 <!DOCTYPE html>
+<!--
+  Musical Forge Studio — three tools (Theme Forge generate / Remix Lab transform /
+  Score Composer write). Pure Web Audio, zero dependencies, single file.
+
+  FUTURE v2 IDEAS (noted, not built — ship first, keep the file simple):
+    - Score Composer: TRUE tie/notation across barlines — auto-split a note that crosses a
+      barline into segments joined by ties (proper engraving). Current build has tie ARCS between
+      consecutive same-pitch notes (played as one sustained sound), which covers the common case;
+      full auto-split is a larger, careful rebuild of the measure-assignment engine.
+    - Score Composer: SLUR / legato phrasing between DIFFERENT-pitch notes (a performance
+      indication, unlike a tie which sustains the same pitch). Deliberately left out for now:
+      audible effect on synth playback is marginal and it muddies the clean "tie = hold the same
+      note" mental model. If added, the lightweight version is a per-note "legato" toggle that
+      slightly overlaps its sound into the next note.
+    - MP3 export option (smaller files); needs an in-browser encoder (dependency) — WAV already
+      works everywhere including SoundCloud/YouTube/Spotify distributors.
+    - More synth instruments as distinct timbres arise (currently 22).
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -393,14 +411,7 @@
     <div class="fgrid">
       <div class="fld fname"><label>Theme name</label>
         <input type="text" id="f-name" placeholder="e.g. Frost Cavern battle" maxlength="48"></div>
-      <div class="fld"><label>Instrument</label><select id="f-lead">
-        <option value="piano">Piano</option><option value="epiano">E-Piano</option>
-        <option value="organ">Organ</option><option value="guitar">Guitar</option>
-        <option value="harp">Harp</option><option value="marimba">Marimba</option>
-        <option value="bell">Bell</option><option value="brass">Brass</option>
-        <option value="strings">Strings</option><option value="sawlead">Saw lead</option>
-        <option value="square">Chip square</option><option value="fm">Flute</option>
-      </select></div>
+      <div class="fld"><label>Instrument</label><select id="f-lead" data-instlist></select></div>
       <div class="fld"><label>Key</label><select id="f-root">
         <option value="60">C</option><option value="61">C#</option><option value="62">D</option>
         <option value="63">D#</option><option value="64">E</option><option value="53">F</option>
@@ -609,6 +620,9 @@
   <details class="guide" style="margin-bottom:14px">
       <summary>🎼 How to use the Score Composer</summary>
       <div class="gbody">
+        <p><b>Quick start:</b> pick a note length and octave, tap piano keys to lay down a few
+        notes, then press <b>Play</b>. That's the whole loop — everything below is refinement.
+        There are 22 instruments to choose from, so try a few voices on the same tune.</p>
         <p><b>Adding notes:</b> pick a duration (the note buttons run whole → sixteenth; ♩ is a quarter note), pick an octave, then tap a
         piano key — the note appears on the staff and plays instantly. The ♯/♭ toggle decides how
         the black keys are spelled (C♯ vs D♭ — same sound, different notation). Every note shows its <b>letter name underneath</b> —
@@ -617,6 +631,20 @@
         <p><b>Editing:</b> tap any note on the staff to select it (it turns gold). While selected,
         piano keys <i>replace</i> its pitch, duration buttons <i>replace</i> its length, a rest icon turns it into silence, and ◀ ▶ move the selection. Tap Done (or empty staff space) to go back to
         adding notes at the end.</p>
+        <p><b>Tie — the easy way:</b> a tie holds a note longer by joining it to another note of
+        the <i>same pitch</i>. Just place a note and press <b>⌣ Tie</b> — it automatically adds a
+        matching note and connects them with a curved line, and they play as one sustained sound.
+        Press <b>⌣ Tie</b> again to extend the hold even further (a chain of ties). Pressing Tie on
+        an already-tied note removes the tie. (If you happen to have already placed a matching note
+        right after, Tie just connects to that one instead of adding a new one.)</p>
+        <p><b>Adjusting a tied note:</b> the note Tie creates is a normal note and starts selected,
+        so you can change its <i>length</i> right away with a duration button if you don't want it
+        the same length. Keep the pitch the same and it stays a true tie (one sustained sound); if
+        you change its pitch, it simply becomes two separate notes instead.</p>
+        <p><b>When do you actually need a tie?</b> Only for lengths a single note can't show — like
+        holding a note for 5 beats (a whole note tied to a quarter), or sustaining across a
+        barline. If the length you want fits one note value (including dotted: dotted quarter = 1½
+        beats, dotted half = 3), just pick that note instead — it's cleaner.</p>
         <p><b>Chords:</b> turn on <b>Chord</b>, then tap extra piano keys — they stack onto the
         last note (or the selected one) instead of adding new notes. Tapping a key already in the
         chord removes it again. Up to five pitches per chord.</p>
@@ -661,14 +689,7 @@
           <select id="sc-num" style="flex:1"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>9</option><option>12</option></select>
           <select id="sc-den" style="flex:1"><option>2</option><option selected>4</option><option>8</option></select>
         </div></div>
-      <div class="fld"><label>Instrument</label><select id="sc-lead">
-        <option value="piano" selected>Piano</option><option value="epiano">E-Piano</option>
-        <option value="organ">Organ</option><option value="guitar">Guitar</option>
-        <option value="harp">Harp</option><option value="marimba">Marimba</option>
-        <option value="bell">Bell</option><option value="brass">Brass</option>
-        <option value="strings">Strings</option><option value="sawlead">Saw lead</option>
-        <option value="square">Chip square</option><option value="fm">Flute</option>
-      </select></div>
+      <div class="fld"><label>Instrument</label><select id="sc-lead" data-instlist></select></div>
       <div class="fld"><label>Tempo (BPM)</label>
         <input type="number" id="sc-bpm" value="100" min="40" max="220"></div>
     </div>
@@ -708,6 +729,7 @@
   </div>
   <div class="durrow">
     <button class="durbtn small" id="sc-chord">Chord</button>
+    <button class="durbtn small" id="sc-tie">⌣ Tie</button>
     <button class="durbtn small" id="sc-undo">↩ Undo</button>
     <button class="durbtn small on" id="sc-sharp" aria-label="prefer sharps">♯</button>
     <button class="durbtn small" id="sc-flat" aria-label="prefer flats">♭</button>
@@ -786,7 +808,10 @@ function mulberry32(seed){
 const VOICE_LABEL = {
   piano:"piano", epiano:"e-piano", organ:"organ", guitar:"guitar",
   harp:"harp", marimba:"marimba", bell:"bell", brass:"brass",
-  strings:"strings", sawlead:"saw lead", square:"chip square", fm:"flute"
+  strings:"strings", sawlead:"saw lead", square:"chip square", fm:"flute",
+  choir:"choir (aah)", ooh:"voice (ooh)", musicbox:"music box", celesta:"celesta",
+  steeldrum:"steel drum", pizz:"pizzicato", accordion:"accordion",
+  synthbass:"synth bass", banjo:"banjo", sitar:"sitar"
 };
 
 /* ============================================================
@@ -1156,10 +1181,114 @@ function vLeadSquare(e, t, f, d){
   [o, vib].forEach(x => { x.start(t); x.stop(t + d + 0.15); });
 }
 
+/* ---- added instrument voices (all synthesized, distinct timbres) ---- */
+function vChoir(e,t,f,d){            // wordless "aah" vocal pad (formant-shaped)
+  const c=e.ctx; const env=c.createGain(); env.gain.value=0; env.connect(e.lead.g);
+  const formants=[[800,1],[1150,0.5],[2900,0.28]]; // vowel-ish resonances
+  [-4,3].forEach(det=>{
+    const o=c.createOscillator(); o.type="sawtooth"; o.frequency.value=f; o.detune.value=det;
+    formants.forEach(fm=>{
+      const bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fm[0]; bp.Q.value=8;
+      const g=c.createGain(); g.gain.value=fm[1]*0.5; o.connect(bp); bp.connect(g); g.connect(env);
+    });
+    o.start(t); o.stop(t+d+0.5);
+  });
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.7,t+0.18);
+  env.gain.setValueAtTime(0.7,t+d); env.gain.linearRampToValueAtTime(0,t+d+0.45);
+}
+function vMusicBox(e,t,f,d){         // delicate, bright, fast-decaying
+  const c=e.ctx; const o1=c.createOscillator(); o1.type="sine"; o1.frequency.value=f;
+  const o2=c.createOscillator(); o2.type="sine"; o2.frequency.value=f*4.2;
+  const g2=c.createGain(); g2.gain.value=0.3; o2.connect(g2);
+  const env=c.createGain(); env.gain.value=0; o1.connect(env); g2.connect(env); env.connect(e.lead.g);
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.7,t+0.004);
+  env.gain.exponentialRampToValueAtTime(0.001,t+Math.max(d,0.2)+0.6);
+  [o1,o2].forEach(o=>{o.start(t);o.stop(t+Math.max(d,0.2)+0.7);});
+}
+function vSteelDrum(e,t,f,d){        // metallic, tuned-percussion ping
+  const c=e.ctx; const env=c.createGain(); env.gain.value=0; env.connect(e.lead.g);
+  [[1,1],[2.8,0.4],[5.4,0.2]].forEach(p=>{
+    const o=c.createOscillator(); o.type="sine"; o.frequency.value=f*p[0];
+    const g=c.createGain(); g.gain.value=p[1]; o.connect(g); g.connect(env);
+    o.start(t); o.stop(t+Math.max(d,0.3)+0.3);
+  });
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.75,t+0.006);
+  env.gain.exponentialRampToValueAtTime(0.001,t+Math.max(d,0.3)+0.25);
+}
+function vPizz(e,t,f,d){             // pizzicato strings — short plucked bow
+  const c=e.ctx; const lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600;
+  const env=c.createGain(); env.gain.value=0; lp.connect(env); env.connect(e.lead.g);
+  [-6,6].forEach(det=>{ const o=c.createOscillator(); o.type="sawtooth"; o.frequency.value=f; o.detune.value=det;
+    const g=c.createGain(); g.gain.value=0.4; o.connect(g); g.connect(lp); o.start(t); o.stop(t+0.35); });
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.8,t+0.006);
+  env.gain.exponentialRampToValueAtTime(0.001,t+0.32);
+}
+function vAccordion(e,t,f,d){        // reedy, buzzy sustain (detuned squares)
+  const c=e.ctx; const env=c.createGain(); env.gain.value=0; env.connect(e.lead.g);
+  const lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=3000; lp.connect(env);
+  [-10,0,11].forEach(det=>{ const o=c.createOscillator(); o.type="square"; o.frequency.value=f; o.detune.value=det;
+    const g=c.createGain(); g.gain.value=0.22; o.connect(g); g.connect(lp); o.start(t); o.stop(t+d+0.1); });
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.7,t+0.04);
+  env.gain.setValueAtTime(0.7,t+d); env.gain.linearRampToValueAtTime(0,t+d+0.08);
+}
+function vSynthBass(e,t,f,d){        // fat sub bass with a little grit
+  const c=e.ctx; const env=c.createGain(); env.gain.value=0; env.connect(e.lead.g);
+  const lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(1400,t);
+  lp.frequency.exponentialRampToValueAtTime(400,t+0.25); lp.connect(env);
+  const sub=c.createOscillator(); sub.type="sine"; sub.frequency.value=f/2;
+  const sg=c.createGain(); sg.gain.value=0.5; sub.connect(sg); sg.connect(env);
+  const o=c.createOscillator(); o.type="sawtooth"; o.frequency.value=f;
+  const g=c.createGain(); g.gain.value=0.5; o.connect(g); g.connect(lp);
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.85,t+0.01);
+  env.gain.setValueAtTime(0.7,t+d); env.gain.linearRampToValueAtTime(0,t+d+0.1);
+  [sub,o].forEach(x=>{x.start(t);x.stop(t+d+0.15);});
+}
+function vCelesta(e,t,f,d){          // glassy bell-piano (bright, medium decay)
+  const c=e.ctx; const o1=c.createOscillator(); o1.type="sine"; o1.frequency.value=f;
+  const o2=c.createOscillator(); o2.type="triangle"; o2.frequency.value=f*2;
+  const g2=c.createGain(); g2.gain.value=0.4; o2.connect(g2);
+  const env=c.createGain(); env.gain.value=0; o1.connect(env); g2.connect(env); env.connect(e.lead.g);
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.7,t+0.005);
+  env.gain.exponentialRampToValueAtTime(0.001,t+Math.max(d,0.3)+0.5);
+  [o1,o2].forEach(o=>{o.start(t);o.stop(t+Math.max(d,0.3)+0.6);});
+}
+function vOoh(e,t,f,d){              // "ooh" vocal pad — darker formants than choir
+  const c=e.ctx; const env=c.createGain(); env.gain.value=0; env.connect(e.lead.g);
+  [[400,1],[800,0.4],[2600,0.15]].forEach(fm=>{
+    const o=c.createOscillator(); o.type="sawtooth"; o.frequency.value=f; o.detune.value=(Math.random()*6-3);
+    const bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fm[0]; bp.Q.value=9;
+    const g=c.createGain(); g.gain.value=fm[1]*0.5; o.connect(bp); bp.connect(g); g.connect(env);
+    o.start(t); o.stop(t+d+0.5);
+  });
+  env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.65,t+0.2);
+  env.gain.setValueAtTime(0.65,t+d); env.gain.linearRampToValueAtTime(0,t+d+0.5);
+}
+function vBanjo(e,t,f,d){            // bright, twangy, fast pluck (Karplus, low damping)
+  pluck(e,t,f,d,0.986,5200,0.8);
+}
+function vSitar(e,t,f,d){            // buzzy sustained pluck with shimmer
+  const c=e.ctx; pluck(e,t,f,d,0.9965,4000,0.6);
+  const o=c.createOscillator(); o.type="triangle"; o.frequency.value=f*2.01;
+  const g=c.createGain(); g.gain.value=0; o.connect(g); g.connect(e.lead.g);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.08,t+0.05);
+  g.gain.exponentialRampToValueAtTime(0.001,t+Math.max(d,0.4)+0.4);
+  o.start(t); o.stop(t+Math.max(d,0.4)+0.5);
+}
+
+function fillInstrumentSelects(){
+  const opts = Object.keys(VOICE_LABEL).map(k =>
+    '<option value="'+k+'">'+VOICE_LABEL[k].replace(/^./,ch=>ch.toUpperCase())+'</option>').join("");
+  document.querySelectorAll('select[data-instlist]').forEach(sel => {
+    const keep = sel.value; sel.innerHTML = opts; if (keep) sel.value = keep;
+  });
+}
 const LEADS = {
   piano: vPiano, epiano: vEPiano, organ: vOrgan, guitar: vGuitar,
   harp: vHarp, marimba: vMarimba, bell: vBell, brass: vBrass,
-  strings: vStrings, sawlead: vSawLead, square: vLeadSquare, fm: vLeadFM
+  strings: vStrings, sawlead: vSawLead, square: vLeadSquare, fm: vLeadFM,
+  choir: vChoir, ooh: vOoh, musicbox: vMusicBox, celesta: vCelesta,
+  steeldrum: vSteelDrum, pizz: vPizz, accordion: vAccordion,
+  synthbass: vSynthBass, banjo: vBanjo, sitar: vSitar
 };
 
 /* ---- accompaniment & drums ---- */
@@ -2460,6 +2589,46 @@ function buildRowsMarkup(rowList, globalRowStart, availW, uniformHeight){
                  o.pp.letter + (o.pp.acc === "#" ? "♯" : o.pp.acc === "b" ? "♭" : "") + '</text>';
         });
       }
+      // tie arc to the next note
+      if (!nt.rest && nt.tie){
+        const psA = nt.pitches.map(pp => noteDiatonic(pp) - base).sort((a,b)=>a-b);
+        const yA = bottom - psA[0] * GAP / 2;
+        if (ci < rowIdxs.length - 1){
+          // next note is on this row → full arc
+          const nn = SCORE.notes[rowIdxs[ci + 1]];
+          if (nn && !nn.rest){
+            const x2 = leftM + (ci + 1) * sp + sp / 2;
+            const mx = (x + x2) / 2, my = yA + 11;
+            out += '<path d="M ' + (x + 3) + ' ' + (yA + 6) + ' Q ' + mx + ' ' + my + ' ' +
+                   (x2 - 3) + ' ' + (yA + 6) + '" fill="none" stroke="' + col +
+                   '" stroke-width="1.4" opacity="0.85"/>';
+          }
+        } else {
+          // next note wraps to the following row → trailing half-arc off the right edge
+          const nn = SCORE.notes[gi + 1];
+          if (nn && !nn.rest){
+            const xEdge = Math.min(x + sp, availW - 6);
+            out += '<path d="M ' + (x + 3) + ' ' + (yA + 6) + ' Q ' + ((x + xEdge)/2) + ' ' +
+                   (yA + 12) + ' ' + xEdge + ' ' + (yA + 9) + '" fill="none" stroke="' + col +
+                   '" stroke-width="1.4" opacity="0.7"/>';
+          }
+        }
+      }
+      // leading half-arc: this note is first in its row and the PREVIOUS note was tied into it
+      if (!nt.rest && ci === 0 && gi > 0){
+        const prev = SCORE.notes[gi - 1];
+        if (prev && prev.tie && !prev.rest){
+          const shared = prev.pitches.some(p1 => nt.pitches.some(p2 => noteMidi(p1) === noteMidi(p2)));
+          if (shared){
+            const psN = nt.pitches.map(pp => noteDiatonic(pp) - base).sort((a,b)=>a-b);
+            const yN = bottom - psN[0] * GAP / 2;
+            const xStart = leftM - 12;
+            out += '<path d="M ' + xStart + ' ' + (yN + 9) + ' Q ' + ((xStart + x)/2) + ' ' +
+                   (yN + 12) + ' ' + (x - 3) + ' ' + (yN + 6) + '" fill="none" stroke="' + col +
+                   '" stroke-width="1.4" opacity="0.7"/>';
+          }
+        }
+      }
       out += "</g>";
       if (LAYOUT.barAfter[gi] && ci < rowIdxs.length - 1)
         out += '<line x1="' + (x + sp / 2) + '" x2="' + (x + sp / 2) +
@@ -2601,6 +2770,44 @@ $("sc-dot").addEventListener("click", () => {
   $("sc-dot").classList.toggle("on", curDot);
   if (selIdx >= 0){ pushHistory(); SCORE.notes[selIdx].d = effDur(); renderStaff(); }
 });
+$("sc-tie").addEventListener("click", () => {
+  // Determine the "current" note: the selected one, or the last note placed.
+  const idx = selIdx >= 0 ? selIdx : SCORE.notes.length - 1;
+  const a = SCORE.notes[idx];
+  if (!a || a.rest){ setStatus(null, "Place a note first — then Tie holds it into a matching note."); return; }
+
+  // If it's already tied to the next note, pressing Tie removes the tie.
+  if (a.tie){
+    pushHistory();
+    a.tie = false;
+    renderStaff();
+    setStatus(null, "Tie removed.");
+    return;
+  }
+
+  const next = SCORE.notes[idx + 1];
+  const sameAsNext = next && !next.rest &&
+    a.pitches.some(p1 => next.pitches.some(p2 =>
+      p1.letter===p2.letter && (p1.acc||"")===(p2.acc||"") && p1.oct===p2.oct));
+
+  pushHistory();
+  if (sameAsNext){
+    // there's already a matching note right after — just tie to it
+    a.tie = true;
+    renderStaff();
+    setStatus(null, "Tied to the next note — they now play as one sustained sound.");
+  } else {
+    // auto-create a same-pitch note (same pitches + current duration), tie into it, select it
+    const clone = { d: effDur(), pitches: a.pitches.map(p => ({ letter:p.letter, acc:p.acc||"", oct:p.oct })) };
+    a.tie = true;
+    SCORE.notes.splice(idx + 1, 0, clone);
+    selIdx = idx + 1;
+    scPage = 1e9;                                   // jump to wherever the new note lands
+    previewEvent(clone);
+    renderStaff();
+    setStatus(null, "Added a tied note at the same pitch — press Tie again to extend the hold, or keep composing.");
+  }
+});
 $("sc-chord").addEventListener("click", () => {
   chordMode = !chordMode;
   $("sc-chord").classList.toggle("on", chordMode);
@@ -2676,6 +2883,34 @@ function stopScore(){
     el.setAttribute("class", "nh"));
 }
 
+/* For tied notes: extend a pitch's sounding duration across the tie chain, and mark which
+   (noteIndex, pitch) re-articulations should be SKIPPED because they're mid-tie. Returns:
+   { addDur: Map "gi:midi" -> extra seconds, skip: Set "gi:midi" } computed in quarter units. */
+function computeTies(){
+  const extraQ = {};   // "gi:midi" -> extra quarter-lengths to add
+  const skip = {};     // "gi:midi" -> true (don't retrigger; it's a continuation)
+  for (let i = 0; i < SCORE.notes.length - 1; i++){
+    const a = SCORE.notes[i];
+    if (a.rest || !a.tie) continue;
+    let j = i;
+    // follow the tie chain for each pitch of a
+    a.pitches.forEach(pa => {
+      const midi = noteMidi(pa);
+      let k = i;
+      while (k < SCORE.notes.length - 1 && SCORE.notes[k].tie && !SCORE.notes[k].rest){
+        const nx = SCORE.notes[k+1];
+        if (nx.rest) break;
+        const match = nx.pitches.find(pb => noteMidi(pb) === midi);
+        if (!match) break;
+        extraQ[i + ":" + midi] = (extraQ[i + ":" + midi] || 0) + nx.d;
+        skip[(k+1) + ":" + midi] = true;
+        k++;
+      }
+    });
+  }
+  return { extraQ, skip };
+}
+
 function playScoreFrom(startIdx){
   if (scorePlaying){ stopScore(); setStatus(); return; }
   if (!SCORE.notes.length){ setStatus(null, "Add some notes first — tap a piano key."); return; }
@@ -2687,11 +2922,17 @@ function playScoreFrom(startIdx){
     scoreOut = env.out;
     const spb = 60 / SCORE.bpm;
     let t = liveCtx.currentTime + 0.15;
+    const TIES = computeTies();
     for (let i = startIdx; i < SCORE.notes.length; i++){
       const nt = SCORE.notes[i];
       const durS = nt.d * spb;
       if (!nt.rest)
-        nt.pitches.forEach(pp => LEADS[SCORE.lead](env, t, mFreq(noteMidi(pp)), durS * 0.92));
+        nt.pitches.forEach(pp => {
+          const midi = noteMidi(pp);
+          if (TIES.skip[i + ":" + midi]) return;                 // continuation of a tie — already sounding
+          const extra = (TIES.extraQ[i + ":" + midi] || 0) * spb;
+          LEADS[SCORE.lead](env, t, mFreq(midi), (durS + extra) * 0.96);
+        });
       const ms = (t - liveCtx.currentTime) * 1000;
       scoreTimers.push(setTimeout(() => {
         const pg = pageOfIdx(i);
@@ -2726,9 +2967,15 @@ $("sc-export").addEventListener("click", async () => {
     const octx = new OfflineAudioContext(2, Math.ceil((total + 2.5) * 44100), 44100);
     const env = buildEnv(octx, makeBuffers(octx));
     let t = 0.05;
-    SCORE.notes.forEach(nt => {
+    const TIES = computeTies();
+    SCORE.notes.forEach((nt, i) => {
       if (!nt.rest)
-        nt.pitches.forEach(pp => LEADS[SCORE.lead](env, t, mFreq(noteMidi(pp)), nt.d * spb * 0.92));
+        nt.pitches.forEach(pp => {
+          const midi = noteMidi(pp);
+          if (TIES.skip[i + ":" + midi]) return;
+          const extra = (TIES.extraQ[i + ":" + midi] || 0) * spb;
+          LEADS[SCORE.lead](env, t, mFreq(midi), (nt.d * spb + extra) * 0.96);
+        });
       t += nt.d * spb;
     });
     const rendered = await octx.startRendering();
@@ -2886,6 +3133,8 @@ document.querySelectorAll("[data-view]").forEach(b =>
   b.addEventListener("click", () => showView(b.dataset.view)));
 document.querySelectorAll("[data-home]").forEach(b =>
   b.addEventListener("click", () => showView("view-home")));
+fillInstrumentSelects();
+if (document.getElementById("sc-lead")) document.getElementById("sc-lead").value = SCORE.lead;
 showView("view-home");
 
 /* ============================================================
