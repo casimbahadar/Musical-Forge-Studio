@@ -33,13 +33,18 @@ create table if not exists public.creations (
   id           uuid primary key default gen_random_uuid(),
   name_key     text references public.names(name_key),   -- null only in legacy rows; new posts always carry a name
   display_name text not null default 'Anonymous',
-  kind         text not null check (kind in ('theme','fx','score')),
+  kind         text not null check (kind in ('theme','fx','score','song')),
   title        text not null default 'untitled',
   payload      jsonb not null,                    -- the creation's own recipe JSON
   created_at   timestamptz not null default now()
 );
 
 create index if not exists creations_created_idx on public.creations (created_at desc);
+
+-- migration for pre-existing tables: allow the sequencer's 'song' kind
+alter table public.creations drop constraint if exists creations_kind_check;
+alter table public.creations add constraint creations_kind_check
+  check (kind in ('theme','fx','score','song'));
 
 -- --- row level security -----------------------------------------------------
 
@@ -73,7 +78,7 @@ declare
   v_id   uuid;
 begin
   -- size / sanity limits (also enforced client-side, re-checked here)
-  if p_kind not in ('theme','fx','score') then
+  if p_kind not in ('theme','fx','score','song') then
     raise exception 'unsupported kind';
   end if;
   if p_payload is null or length(p_payload::text) > 200000 then
