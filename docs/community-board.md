@@ -44,7 +44,9 @@ All writes go through one function, `share_creation()`, which enforces the rules
 - **No accounts, no email, no IP, no personal data.** The secret *is* the
   identity, so there is no password reset. To use the same name on another
   device, **export your creator key** (a small backup file) and import it there.
-- Anonymous posting (no name) is allowed and shows as "Anonymous".
+- A creator name is **required** to post — there is no anonymous posting. The
+  server rejects nameless posts and the app re-prompts until a name is given
+  (or the user cancels). Rows from before this rule may still show "Anonymous".
 
 Client reference implementation: `community/creator-key.js` (verified: secret
 generation, name normalization, persistence, export/import, and that its

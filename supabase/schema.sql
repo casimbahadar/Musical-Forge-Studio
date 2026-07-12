@@ -31,7 +31,7 @@ create table if not exists public.names (
 
 create table if not exists public.creations (
   id           uuid primary key default gen_random_uuid(),
-  name_key     text references public.names(name_key),   -- null = anonymous
+  name_key     text references public.names(name_key),   -- null only in legacy rows; new posts always carry a name
   display_name text not null default 'Anonymous',
   kind         text not null check (kind in ('theme','fx','score')),
   title        text not null default 'untitled',
@@ -86,36 +86,32 @@ begin
     raise exception 'name too long';
   end if;
 
-  if v_key is not null then
-    -- posting under a name requires the device's creator secret
-    if length(coalesce(p_secret,'')) < 16 then
-      raise exception 'a creator secret is required to post under a name';
-    end if;
-    v_hash := encode(digest(p_secret, 'sha256'), 'hex');
+  -- a display name is REQUIRED: no anonymous posts on the board
+  if v_key is null then
+    raise exception 'a display name is required to share to the community board';
+  end if;
 
-    -- first post under this name claims it; later posts must match
-    insert into public.names(name_key, display_name, secret_hash)
-      values (v_key, v_disp, v_hash)
-      on conflict (name_key) do nothing;
+  -- posting under a name requires the device's creator secret
+  if length(coalesce(p_secret,'')) < 16 then
+    raise exception 'a creator secret is required to post under a name';
+  end if;
+  v_hash := encode(digest(p_secret, 'sha256'), 'hex');
 
-    if not exists (
-      select 1 from public.names where name_key = v_key and secret_hash = v_hash
-    ) then
-      raise exception 'that name is already taken by someone else';
-    end if;
+  -- first post under this name claims it; later posts must match
+  insert into public.names(name_key, display_name, secret_hash)
+    values (v_key, v_disp, v_hash)
+    on conflict (name_key) do nothing;
 
-    -- rate limit: a name may post at most 10 times per hour
-    if (select count(*) from public.creations c
-         where c.name_key = v_key and c.created_at > now() - interval '1 hour') >= 10 then
-      raise exception 'rate limit: this name has posted a lot in the last hour — try again later';
-    end if;
-  else
-    v_disp := 'Anonymous';
-    -- rate limit: anonymous posts share a global budget of 20 per hour
-    if (select count(*) from public.creations c
-         where c.name_key is null and c.created_at > now() - interval '1 hour') >= 20 then
-      raise exception 'rate limit: too many anonymous posts right now — add a display name or try again later';
-    end if;
+  if not exists (
+    select 1 from public.names where name_key = v_key and secret_hash = v_hash
+  ) then
+    raise exception 'that name is already taken by someone else';
+  end if;
+
+  -- rate limit: a name may post at most 10 times per hour
+  if (select count(*) from public.creations c
+       where c.name_key = v_key and c.created_at > now() - interval '1 hour') >= 10 then
+    raise exception 'rate limit: this name has posted a lot in the last hour — try again later';
   end if;
 
   -- duplicate guard: the exact same recipe can't be re-posted within 10 minutes
@@ -125,7 +121,7 @@ begin
   end if;
 
   insert into public.creations(name_key, display_name, kind, title, payload)
-    values (v_key, coalesce(nullif(v_disp,''),'Anonymous'), p_kind,
+    values (v_key, v_disp, p_kind,
             coalesce(nullif(p_title,''),'untitled'), p_payload)
     returning id into v_id;
 
@@ -232,7 +228,8 @@ grant execute on function public.register_load(uuid) to anon, authenticated;
 -- Moderation (you, in the Supabase dashboard):
 --   delete a creation:  delete from public.creations where id = '<uuid>';
 --   release a name:      delete from public.names where name_key = '<name>';
--- Rate limits (in share_creation): 10 posts/hour per name, 20 anonymous
--- posts/hour globally, and identical payloads rejected within 10 minutes.
--- Likes are one-per-device, enforced server-side via the likes table.
+-- Posting requires a display name (no anonymous posts). Rate limits (in
+-- share_creation): 10 posts/hour per name, and identical payloads rejected
+-- within 10 minutes. Likes are one-per-device, enforced server-side via the
+-- likes table.
 -- ============================================================================

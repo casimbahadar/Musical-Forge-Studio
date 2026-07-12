@@ -399,10 +399,10 @@
       presets, and Score Composer scores, even mixed in one file, and sorts each to the right
       place.</p>
       <p><b>↗ Share</b> on any saved card posts it to the <b>🌐 Community board</b> — a global
-      gallery everyone using the app can browse, play and download. You pick a display name (kept
-      for next time; leave it blank to post anonymously), and a device-held key means only you can
-      post or delete under that name — no account, no sign-in. Open <b>🌐 Community board</b> from
-      the home screen to browse everyone's creations, filter by type and sort.</p>
+      gallery everyone using the app can browse, play and download. Sharing needs a <b>creator
+      name</b> (kept for next time, shown beside your posts), and a device-held key means only you
+      can post or delete under that name — no account, no sign-in. Open <b>🌐 Community board</b>
+      from the home screen to browse everyone's creations, filter by type and sort.</p>
       <p>The <b>Remix Lab</b> and <b>Score Composer</b> pages have their own guides just like this
       one — look for the 🎚 and 🎼 panels there.</p>
     </div>
@@ -596,8 +596,8 @@
           Echo repeats high = dub tails.</p>
           <p><b>Your remix presets</b> (below the Lab, after your first save): tap a card to snap
           all sliders to those settings — even while music plays. <b>↗ Share</b> posts the preset to
-          the <b>🌐 Community board</b> (a global gallery — pick a display name, or post
-          anonymously); <b>⬇ JSON</b> downloads it to back up or share as a file, and the
+          the <b>🌐 Community board</b> (a global gallery — a creator name is required and appears
+          beside your posts); <b>⬇ JSON</b> downloads it to back up or share as a file, and the
           <b>Import JSON</b> button on the Theme Forge page reads presets back in. <b>✕</b> deletes.</p>
           <p><b>Loop</b> is on by default so the track keeps going while you experiment —
           that's the fastest way to learn what every slider does.</p>
@@ -676,8 +676,8 @@
         stored on this device.</p>
         <p><b>Your scores</b> cards show the instrument, note count and length. Tap one to load it
         back into the editor and keep working. <b>↗ Share</b> posts the score to the <b>🌐 Community
-        board</b> (a global gallery — pick a display name, or post anonymously), where anyone can
-        play, download or keep it. <b>⬇ JSON</b> downloads it as a file, readable back via <b>Import
+        board</b> (a global gallery — a creator name is required and appears beside your posts),
+        where anyone can play, download or keep it. <b>⬇ JSON</b> downloads it as a file, readable back via <b>Import
         JSON</b> on the Theme Forge page. <b>✕</b> deletes.</p>
         <p><b>If something sounds wrong:</b> tap the note, check its octave (a right melody in the
         wrong octave sounds off), or ↩ Undo your way back. There's no wrong way to use this —
@@ -3300,15 +3300,21 @@ function cmKind(kind){ return /score/i.test(kind) ? "score" : /fx/i.test(kind) ?
 /* --- ↗ Share: post to the board (falls back to a play link) --- */
 async function galleryShare(kind, obj){
   if (!CM_ON) return galleryShareLink(kind, obj);
+  // A username is required to share — no anonymous posts on the board.
   let name = localStorage.getItem("mfs_display_name") || "";
-  name = window.prompt("Post “" + (obj.name || obj.id || kind) + "” to the community board.\n\nShow it under what name? (leave blank to post anonymously)", name);
-  if (name === null) return;                       // cancelled
-  name = name.trim().slice(0, 40);
+  let msg = "Post “" + (obj.name || obj.id || kind) + "” to the community board.\n\nYour creator name (required — it appears beside your posts):";
+  for (;;){
+    name = window.prompt(msg, name);
+    if (name === null){ setStatus(null, "Not posted — sharing needs a creator name."); return; }   // cancelled
+    name = name.trim().slice(0, 40);
+    if (name) break;
+    msg = "A creator name is required to share to the community board.\n\nPick a name (it appears beside your posts):";
+  }
   localStorage.setItem("mfs_display_name", name);
   setStatus(null, "Posting to the community board…");
   try {
     await cmShare({ name: name, kind: cmKind(kind), title: obj.name || obj.id || kind, payload: obj });
-    setStatus(null, (name ? "Posted as “" + esc(name) + "”" : "Posted anonymously") + " — open 🌐 Community board to see it.");
+    setStatus(null, "Posted as “" + esc(name) + "” — open 🌐 Community board to see it.");
   } catch (e){
     if (e.nameTaken){
       setStatus("The name “" + esc(name) + "” is already taken by another device — tap ↗ Share again and pick a different name.");
