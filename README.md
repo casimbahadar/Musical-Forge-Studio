@@ -1,9 +1,9 @@
 # Musical Forge Studio
 
-Three music tools in one browser app: **generate** game themes, **remix**
-audio, or **write** sheet music. One HTML file, zero dependencies, pure Web
-Audio API. Every page has a built-in plain-language guide, so first-timers
-can do everything a pro can.
+Four music tools in one browser app: **generate** game themes, **remix**
+audio, **write** sheet music, or **arrange** multi-track songs. One HTML
+file, zero dependencies, pure Web Audio API. Every page has a built-in
+plain-language guide, so first-timers can do everything a pro can.
 
 **[▶ Try it live](https://casimbahadar.github.io/Musical-Forge-Studio/)**
 *(enable GitHub Pages on this repo to activate the link)*
@@ -75,26 +75,48 @@ Real engraved sheet music, note by note, on paginated sheets:
 - **Save**, reload for editing, or share the score as a small JSON file —
   whoever imports it gets your exact score, editable.
 
-## 🌐 Community sharing
+## 🎹 Forge Sequencer — arrange
 
-Every saved theme, FX preset, and score card has an **↗ Share** button that
-creates a self-contained **play-in-app link** and hands it to your device's
-share sheet (or copies it to the clipboard). Send that link to anyone,
-anywhere — they open it and the app loads your creation, ready to play or
-save. No account, no sign-in, no server, and nothing to install: the link
-carries the creation's own recipe and nothing else. Whoever opens it is
-asked before anything is saved to their device, and the recipe is validated
-exactly like a file import.
+A multi-track piano-roll sequencer: stack tracks — each one instrument —
+and arrange when every note plays on a grid.
+
+- **22 instruments**, all synthesized in code (the same engine as the rest
+  of the studio), plus dedicated **drum tracks** (open hat, hi-hat, clap,
+  snare, tom, kick).
+- **Vocal overdub** — add a 🎤 Vocal track and record your voice through
+  the mic (Bluetooth included) *while the song plays*, so you perform in
+  time. A **SYNC** slider compensates mic latency; **BOOST** lifts the
+  vocal above the instruments. Recording needs the hosted (https) site in
+  a real browser. Recorded audio can't live in a saved project file —
+  **Export WAV** bakes voice + instruments together.
+- **Per-track control** — rename, instrument, volume, mute, solo,
+  duplicate, delete; per-note velocity. Volume and BOOST adjust **live
+  during playback**.
+- **Transport** — playhead, tempo, 1–32 bars, grid resolution, zoom, loop,
+  metronome. **Export WAV** mixes everything; save projects on-device or
+  share them as JSON / to the community board.
+
+## 🌐 Community board
+
+Every saved theme, FX preset, score, and song card has an **↗ Share**
+button that posts it to the **community board** — a global gallery everyone
+using the app can browse, play, download, and ❤ like. Sharing requires a
+**creator name** (no anonymous posts): a device-held key claims your name
+first-come, so nobody else can post — or delete — under it. No accounts, no
+email, no personal data. The board has type filters, title search, sorting
+(including **Most liked**), like counts (one per device, enforced
+server-side), load counts, and infinite scroll. Backend: a small Supabase
+project (see `supabase/schema.sql` and `docs/community-board.md`).
 
 ## Sharing everything
 
-Themes, FX presets, and scores all download as small JSON files (stamped
-with a "made with" link). The **Import** button recognizes all three shapes
-— even mixed in one file — and routes each to the right list. Because
-generation is deterministic, whoever imports your file hears exactly what
-you heard. Saves persist on your device (no account, no server): via
-`localStorage` on the web, with an automatic fallback chain for other
-environments.
+Themes, FX presets, scores, and songs all download as small JSON files
+(stamped with a "made with" link). The **Import** button recognizes all
+four shapes — even mixed in one file — and routes each to the right list.
+Because generation is deterministic, whoever imports your file hears
+exactly what you heard. Saves persist on your device (no account, no
+server): via `localStorage` on the web, with an automatic fallback chain
+for other environments.
 
 ## Running it
 
