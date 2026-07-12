@@ -103,8 +103,25 @@ begin
     ) then
       raise exception 'that name is already taken by someone else';
     end if;
+
+    -- rate limit: a name may post at most 10 times per hour
+    if (select count(*) from public.creations c
+         where c.name_key = v_key and c.created_at > now() - interval '1 hour') >= 10 then
+      raise exception 'rate limit: this name has posted a lot in the last hour — try again later';
+    end if;
   else
     v_disp := 'Anonymous';
+    -- rate limit: anonymous posts share a global budget of 20 per hour
+    if (select count(*) from public.creations c
+         where c.name_key is null and c.created_at > now() - interval '1 hour') >= 20 then
+      raise exception 'rate limit: too many anonymous posts right now — add a display name or try again later';
+    end if;
+  end if;
+
+  -- duplicate guard: the exact same recipe can't be re-posted within 10 minutes
+  if exists (select 1 from public.creations c
+              where c.payload = p_payload and c.created_at > now() - interval '10 minutes') then
+    raise exception 'that exact creation was just shared — no need to post it twice';
   end if;
 
   insert into public.creations(name_key, display_name, kind, title, payload)
@@ -147,11 +164,75 @@ $$;
 revoke all on function public.delete_creation(uuid, text) from public;
 grant execute on function public.delete_creation(uuid, text) to anon, authenticated;
 
+-- --- likes & load counts -----------------------------------------------------
+alter table public.creations add column if not exists likes int not null default 0;
+alter table public.creations add column if not exists loads int not null default 0;
+
+-- One like per creation per device, enforced SERVER-side: each like is a row
+-- keyed by (creation, hashed device token), and the likes column is just the
+-- row count. Replaying set_like(true) from curl can't inflate anything.
+create table if not exists public.likes (
+  creation_id uuid not null references public.creations(id) on delete cascade,
+  device_hash text not null,
+  created_at  timestamptz not null default now(),
+  primary key (creation_id, device_hash)
+);
+alter table public.likes enable row level security;   -- no policies: clients
+-- never touch this table directly; only the definer function below does.
+
+drop function if exists public.set_like(uuid, boolean);   -- pre-device version
+create or replace function public.set_like(p_id uuid, p_device text, p_liked boolean)
+returns int
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v int;
+  v_hash text;
+begin
+  if length(coalesce(p_device,'')) < 16 then
+    raise exception 'bad device token';
+  end if;
+  v_hash := encode(digest(p_device, 'sha256'), 'hex');
+  if p_liked then
+    insert into public.likes(creation_id, device_hash) values (p_id, v_hash)
+      on conflict do nothing;
+  else
+    delete from public.likes where creation_id = p_id and device_hash = v_hash;
+  end if;
+  update public.creations
+     set likes = (select count(*) from public.likes l where l.creation_id = p_id)
+   where id = p_id
+   returning likes into v;
+  if v is null then raise exception 'no such creation'; end if;
+  return v;
+end;
+$$;
+revoke all on function public.set_like(uuid, text, boolean) from public;
+grant execute on function public.set_like(uuid, text, boolean) to anon, authenticated;
+
+-- Loads count every open by design ("Most liked" is the quality benchmark).
+create or replace function public.register_load(p_id uuid)
+returns int
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare v int;
+begin
+  update public.creations set loads = loads + 1 where id = p_id returning loads into v;
+  return coalesce(v, 0);
+end;
+$$;
+revoke all on function public.register_load(uuid) from public;
+grant execute on function public.register_load(uuid) to anon, authenticated;
+
 -- ============================================================================
 -- Moderation (you, in the Supabase dashboard):
 --   delete a creation:  delete from public.creations where id = '<uuid>';
 --   release a name:      delete from public.names where name_key = '<name>';
--- Known Phase-1 gap: no server-side rate limiting. See docs/community-board.md
--- for the options (Supabase API limits, an Edge Function, or a per-name/time
--- throttle) before opening this widely.
+-- Rate limits (in share_creation): 10 posts/hour per name, 20 anonymous
+-- posts/hour globally, and identical payloads rejected within 10 minutes.
+-- Likes are one-per-device, enforced server-side via the likes table.
 -- ============================================================================

@@ -1848,13 +1848,23 @@ function classifyShared(t){
   if (t.mode && t.prog) return "theme";                              // theme recipe shape
   return null;
 }
+/* Imported items can come from the public board or a stranger's link, so
+   coerce the fields every renderer touches into safe, bounded strings —
+   a payload with e.g. a numeric or object "name" must not crash the app. */
+function sanitizeShared(t){
+  t.id = String(t.id).slice(0, 40);
+  t.name = String(t.name == null ? t.id : t.name).slice(0, 80);
+  return t;
+}
 async function importItems(arr){
   const haveThemes = new Set(TRACKS.concat(CUSTOMS).map(t => t.id));
   const haveFx = new Set(FX_SAVES.map(f => f.id));
   const haveSc = new Set(SCORES.map(sc => sc.id));
   let themes = 0, fx = 0, scores = 0, skipped = 0;
   arr.forEach(t => {
-    switch (classifyShared(t)){
+    const kind = classifyShared(t);
+    if (kind) sanitizeShared(t);
+    switch (kind){
       case "score":
         if (haveSc.has(t.id)){ skipped++; break; }
         SCORES.push(t); haveSc.add(t.id); scores++; break;
@@ -3256,8 +3266,22 @@ async function cmDelete(id, secret){
   const r = await fetch(cmBase() + "/rest/v1/rpc/delete_creation", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_secret: secret }) });
   if (!r.ok){ const t = await r.text(); let msg = t; try { msg = JSON.parse(t).message || t; } catch (e){} throw new Error(msg); }
 }
+/* Anonymous per-device token: random, meaningless, and only ever sent as a
+   like identifier so the server can count one like per device. No personal
+   data — clearing browser storage simply mints a new one. */
+function cmDeviceToken(){
+  let t = null;
+  try { t = localStorage.getItem("mfs_device_v1"); } catch (e){}
+  if (!t){
+    const b = new Uint8Array(32); crypto.getRandomValues(b);
+    let s = ""; b.forEach(x => { s += String.fromCharCode(x); });
+    t = btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    try { localStorage.setItem("mfs_device_v1", t); } catch (e){}
+  }
+  return t;
+}
 async function cmSetLike(id, liked){
-  const r = await fetch(cmBase() + "/rest/v1/rpc/set_like", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_liked: liked }) });
+  const r = await fetch(cmBase() + "/rest/v1/rpc/set_like", { method: "POST", headers: cmHeaders(), body: JSON.stringify({ p_id: id, p_device: cmDeviceToken(), p_liked: liked }) });
   if (!r.ok) throw new Error("HTTP " + r.status);
   const n = parseInt(await r.text(), 10); return isNaN(n) ? null : n;
 }
@@ -3449,19 +3473,25 @@ $("cm-restore-file").addEventListener("change", (ev) => {
 
 /* Load one shared creation into the app (from a link or a board card). */
 async function loadSharedObject(obj){
-  const kind = classifyShared(obj);
-  if (!kind){ setStatus("That isn't a valid theme, FX preset, or score."); return false; }
-  const label = kind === "fx" ? "FX preset" : kind;
-  const nm = String(obj.name || obj.id || "untitled").slice(0, 80);
-  if (!window.confirm("Load " + label + " “" + nm + "” into your library on this device?")){
-    setStatus(null, label + " not loaded."); return false;
+  try {
+    const kind = classifyShared(obj);
+    if (!kind){ setStatus("That isn't a valid theme, FX preset, or score."); return false; }
+    const label = kind === "fx" ? "FX preset" : kind;
+    const nm = String(obj.name || obj.id || "untitled").slice(0, 80);
+    if (!window.confirm("Load " + label + " “" + nm + "” into your library on this device?")){
+      setStatus(null, label + " not loaded."); return false;
+    }
+    const r = await importItems([obj]);
+    showView(kind === "score" ? "view-score" : kind === "fx" ? "view-remix" : "view-forge");
+    setStatus(null, (r.themes || r.fx || r.scores)
+      ? "Loaded " + label + " “" + esc(nm) + "” — press ▶ to play, or keep it."
+      : "You already have that " + label + " — it's in your list.");
+    return true;
+  } catch (e){
+    // A hostile or corrupted payload must never wedge the app.
+    setStatus("Couldn't load that creation — it appears to be malformed.");
+    return false;
   }
-  const r = await importItems([obj]);
-  showView(kind === "score" ? "view-score" : kind === "fx" ? "view-remix" : "view-forge");
-  setStatus(null, (r.themes || r.fx || r.scores)
-    ? "Loaded " + label + " “" + esc(nm) + "” — press ▶ to play, or keep it."
-    : "You already have that " + label + " — it's in your list.");
-  return true;
 }
 
 /* If the page was opened with a "#c=<encoded recipe>" link, load that one

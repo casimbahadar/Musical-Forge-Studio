@@ -65,13 +65,17 @@ requests match the `share_creation` contract and board query).
 - **No personal data.** Nothing that could identify a user is collected, so the
   privacy/legal surface stays minimal — this is why Phase 1 is low-risk.
 
-### Known Phase-1 gap: rate limiting
+### Rate limiting & count integrity (closed)
 
-Pure SQL can't easily rate-limit anonymous inserts. Before opening this widely,
-add one of: Supabase's built-in API rate limits, an Edge Function in front of
-`share_creation()` (which also enables the stronger signature variant below),
-or a per-name/time throttle. Moderation meanwhile is a `delete` in the
-dashboard (commands are in `schema.sql`).
+`share_creation()` enforces: **10 posts/hour per name**, **20 anonymous
+posts/hour globally**, and identical payloads are rejected within 10 minutes.
+**Likes are one-per-device server-side**: each like is a row in a `likes` table
+keyed by (creation, hashed device token) and the `likes` column is the row
+count, so replaying `set_like` from curl can't inflate the "Most liked"
+benchmark. Load counts intentionally count every open. Imported payloads are
+sanitized client-side (bounded string coercion of `id`/`name`) and the load
+path fails gracefully on malformed input. Moderation remains a `delete` in the
+dashboard (commands in `schema.sql`).
 
 ### Optional hardening (later): signatures instead of a shared secret
 
