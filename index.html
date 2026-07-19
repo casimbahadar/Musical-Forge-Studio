@@ -887,7 +887,7 @@
     <button class="btn gold" id="seq-play">Play</button>
     <button class="btn teal" id="seq-export">Export WAV</button>
     <div class="ctl"><label>Tempo</label><input type="number" id="seq-bpm" value="110" min="40" max="220"></div>
-    <div class="ctl"><label>Bars</label><input type="number" id="seq-bars" value="4" min="1" max="64"></div>
+    <div class="ctl"><label>Bars</label><input type="number" id="seq-bars" value="4" min="1" max="128"></div>
     <div class="ctl"><label>Grid</label><select id="seq-res">
       <option value="1">1 / beat</option>
       <option value="2" selected>2 / beat (½)</option>
@@ -4615,7 +4615,7 @@ $("seq-export").addEventListener("click", async () => {
    CONTROLS + SAVE/LOAD
    ============================================================ */
 $("seq-bpm").addEventListener("change", e => SONG.bpm = Math.max(40,Math.min(220,+e.target.value||110)));
-$("seq-bars").addEventListener("change", e => { SONG.bars = Math.max(1,Math.min(64,+e.target.value||4));
+$("seq-bars").addEventListener("change", e => { SONG.bars = Math.max(1,Math.min(128,+e.target.value||4));
   if (playing){ stopPlay(); setStatus(); } renderTracks(); });
 $("seq-res").addEventListener("change", e => { SONG.res = +e.target.value;
   if (playing){ stopPlay(); setStatus(); } renderTracks(); });
@@ -4663,11 +4663,12 @@ function pgWraps(){ return document.querySelectorAll("#seq-tracks .rollwrap"); }
 function pgGeom(){
   const w0 = pgWraps()[0]; if (!w0) return null;
   const barPx = stepsPerBar() * CELL;
-  return { w0, barPx, per: Math.max(1, Math.floor(w0.clientWidth / barPx)) };
+  // fixed page size: 4 bars on phones, 8 on desktop / larger screens
+  return { w0, barPx, per: window.innerWidth >= 760 ? 8 : 4 };
 }
 function pagerSync(){
   const g = pgGeom(), el = $("seq-pgInfo");
-  if (!g){ $("seq-pager").style.display = "none"; return; }
+  if (!g || SONG.bars <= g.per){ $("seq-pager").style.display = "none"; return; }
   $("seq-pager").style.display = "";
   const bar = Math.min(SONG.bars - 1, Math.round(g.w0.scrollLeft / g.barPx));
   el.textContent = "Bars " + (bar + 1) + "–" + Math.min(bar + g.per, SONG.bars) + " of " + SONG.bars;
@@ -4676,6 +4677,8 @@ function pagerSync(){
     g.w0.addEventListener("scroll", () => { clearTimeout(g.w0._pgT); g.w0._pgT = setTimeout(pagerSync, 80); }, { passive: true });
   }
 }
+let pgRz = null;
+window.addEventListener("resize", () => { clearTimeout(pgRz); pgRz = setTimeout(pagerSync, 150); });
 function pagerJump(dir){
   const g = pgGeom(); if (!g) return;
   const cur = Math.round(g.w0.scrollLeft / g.barPx);
