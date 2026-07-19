@@ -894,6 +894,7 @@
       <option value="4">4 / beat (¼)</option>
     </select></div>
     <label class="ctl"><input type="checkbox" id="seq-loop" checked> Loop</label>
+    <label class="ctl" title="Page the view along with the playhead during playback"><input type="checkbox" id="seq-follow" checked> Follow</label>
     <span class="ctl"><label>Zoom</label>
       <button class="pill" id="seq-zoomOut" style="padding:8px 12px">−</button>
       <button class="pill" id="seq-zoomIn" style="padding:8px 12px">+</button>
@@ -3781,9 +3782,16 @@ function makeBuffers(ctx){
   return { noise, ir };
 }
 function buildEnv(ctx, bufs){
+  // Master limiter: dense multi-track mixes can sum past 1.0, which hard-clips
+  // into static-like crackle (and the reverb smears it into a noisy tail).
+  // Squash peaks instead — applies to live playback AND the WAV export path.
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -10; limiter.knee.value = 8; limiter.ratio.value = 12;
+  limiter.attack.value = 0.003; limiter.release.value = 0.25;
+  limiter.connect(ctx.destination);
   const master = ctx.createBiquadFilter();
   master.type = "lowpass"; master.frequency.value = 6500;
-  master.connect(ctx.destination);
+  master.connect(limiter);
   const out = ctx.createGain(); out.gain.value = 0.85; out.connect(master);
   const verb = ctx.createConvolver(); verb.buffer = bufs.ir;
   const wet = ctx.createGain(); wet.gain.value = 0.32;
@@ -4529,6 +4537,7 @@ function startPlay(){
   playing = true; $("seq-play").textContent = "Stop";
   pump();
   // playhead
+  let followPos = -1;   // last page-aligned scroll applied by Follow
   const draw = () => {
     if (!playing) return;
     const t = actx.currentTime - playStart;
@@ -4536,6 +4545,20 @@ function startPlay(){
     if (el < 0) el = 0;
     const x = LABELW + (el / stepDur) * CELL;
     document.querySelectorAll(".rollwrap .ph").forEach(ph=>{ ph.setAttribute("x1",x); ph.setAttribute("x2",x); });
+    // Follow: page every grid along with the playhead (once per page crossing,
+    // so manual scrolling within a page isn't fought).
+    if ($("seq-follow").checked){
+      const g = pgGeom();
+      if (g){
+        const pagePx = g.per * g.barPx;
+        const target = Math.max(0, Math.floor((x - LABELW) / pagePx) * pagePx);
+        if (target !== followPos){
+          followPos = target;
+          pgWraps().forEach(w => { w.scrollLeft = target; });
+          pagerSync();
+        }
+      }
+    }
     rafId = requestAnimationFrame(draw);
   };
   draw();
