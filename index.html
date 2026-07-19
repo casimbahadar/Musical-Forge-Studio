@@ -887,7 +887,7 @@
     <button class="btn gold" id="seq-play">Play</button>
     <button class="btn teal" id="seq-export">Export WAV</button>
     <div class="ctl"><label>Tempo</label><input type="number" id="seq-bpm" value="110" min="40" max="220"></div>
-    <div class="ctl"><label>Bars</label><input type="number" id="seq-bars" value="4" min="1" max="32"></div>
+    <div class="ctl"><label>Bars</label><input type="number" id="seq-bars" value="4" min="1" max="64"></div>
     <div class="ctl"><label>Grid</label><select id="seq-res">
       <option value="1">1 / beat</option>
       <option value="2" selected>2 / beat (½)</option>
@@ -922,6 +922,11 @@
     <label class="ctl"><input type="checkbox" id="seq-metro"> Metronome</label>
   </div>
 
+  <div class="seqbar" id="seq-pager">
+    <button class="pill" id="seq-pgPrev">‹ Prev bars</button>
+    <span class="ctl" id="seq-pgInfo" style="flex:1;justify-content:center"></span>
+    <button class="pill" id="seq-pgNext">Next bars ›</button>
+  </div>
   <div class="tracks" id="seq-tracks"></div>
 
   <div class="addrow">
@@ -4314,6 +4319,7 @@ function renderTracks(){
     bindRoll(wrap.querySelector("svg"), ti);
     if (!drum){ const midC = rowForMidi(tr,72)*ROWH - ROLLH/2; wrap.scrollTop = Math.max(0, midC); }
   });
+  pagerSync();
 }
 
 function previewDrum(dk){
@@ -4609,7 +4615,7 @@ $("seq-export").addEventListener("click", async () => {
    CONTROLS + SAVE/LOAD
    ============================================================ */
 $("seq-bpm").addEventListener("change", e => SONG.bpm = Math.max(40,Math.min(220,+e.target.value||110)));
-$("seq-bars").addEventListener("change", e => { SONG.bars = Math.max(1,Math.min(32,+e.target.value||4));
+$("seq-bars").addEventListener("change", e => { SONG.bars = Math.max(1,Math.min(64,+e.target.value||4));
   if (playing){ stopPlay(); setStatus(); } renderTracks(); });
 $("seq-res").addEventListener("change", e => { SONG.res = +e.target.value;
   if (playing){ stopPlay(); setStatus(); } renderTracks(); });
@@ -4648,20 +4654,60 @@ function setZoom(dir){
 }
 $("seq-zoomIn").addEventListener("click", ()=>setZoom(1));
 $("seq-zoomOut").addEventListener("click", ()=>setZoom(-1));
+
+/* ---- bar pagination: jump every track's grid together, one screenful of
+   whole bars at a time, instead of dragging a long horizontal scroll.
+   Scroll-jump only — tap/resize/playhead math is untouched because those
+   already measure against each rollwrap's scrollLeft. ---- */
+function pgWraps(){ return document.querySelectorAll("#seq-tracks .rollwrap"); }
+function pgGeom(){
+  const w0 = pgWraps()[0]; if (!w0) return null;
+  const barPx = stepsPerBar() * CELL;
+  return { w0, barPx, per: Math.max(1, Math.floor(w0.clientWidth / barPx)) };
+}
+function pagerSync(){
+  const g = pgGeom(), el = $("seq-pgInfo");
+  if (!g){ $("seq-pager").style.display = "none"; return; }
+  $("seq-pager").style.display = "";
+  const bar = Math.min(SONG.bars - 1, Math.round(g.w0.scrollLeft / g.barPx));
+  el.textContent = "Bars " + (bar + 1) + "–" + Math.min(bar + g.per, SONG.bars) + " of " + SONG.bars;
+  if (!g.w0._pgHooked){
+    g.w0._pgHooked = true;
+    g.w0.addEventListener("scroll", () => { clearTimeout(g.w0._pgT); g.w0._pgT = setTimeout(pagerSync, 80); }, { passive: true });
+  }
+}
+function pagerJump(dir){
+  const g = pgGeom(); if (!g) return;
+  const cur = Math.round(g.w0.scrollLeft / g.barPx);
+  const target = Math.max(0, Math.min(cur + dir * g.per, SONG.bars - g.per));
+  pgWraps().forEach(w => { try { w.scrollTo({ left: target * g.barPx, behavior: "smooth" }); } catch(e){ w.scrollLeft = target * g.barPx; } });
+  setTimeout(pagerSync, 120);
+}
+$("seq-pgPrev").addEventListener("click", ()=>pagerJump(-1));
+$("seq-pgNext").addEventListener("click", ()=>pagerJump(1));
+
+/* After adding a track, bring it into view instead of the page snapping up
+   (the rebuild momentarily collapses the page, so the browser clamps scroll). */
+function snapToTrack(ti){
+  requestAnimationFrame(() => {
+    const el = tracksEl.children[ti];
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
 $("seq-accToggle").addEventListener("click", () => {
   accSpelling = accSpelling === "sharp" ? "flat" : "sharp";
   $("seq-accToggle").textContent = accSpelling === "sharp" ? "♯ Sharps" : "♭ Flats";
   renderTracks();
 });
-$("seq-addDrum").addEventListener("click", () => { SONG.tracks.push(newDrumTrack()); selTrack=SONG.tracks.length-1; renderTracks(); });
+$("seq-addDrum").addEventListener("click", () => { SONG.tracks.push(newDrumTrack()); selTrack=SONG.tracks.length-1; renderTracks(); snapToTrack(selTrack); });
 $("seq-addVocal").addEventListener("click", () => {
-  SONG.tracks.push(newVocalTrack()); selTrack=SONG.tracks.length-1; renderTracks();
+  SONG.tracks.push(newVocalTrack()); selTrack=SONG.tracks.length-1; renderTracks(); snapToTrack(selTrack);
   setStatus(null, "Vocal track added — press ● Record to sing over your song. Grant mic access when asked.");
 });
 $("seq-addTrack").addEventListener("click", () => {
   const used = SONG.tracks.map(t=>t.inst);
   const next = VOICE_KEYS.find(k=>!used.includes(k)) || "piano";
-  SONG.tracks.push(newTrack(next)); selTrack = SONG.tracks.length-1; renderTracks();
+  SONG.tracks.push(newTrack(next)); selTrack = SONG.tracks.length-1; renderTracks(); snapToTrack(selTrack);
 });
 $("seq-clear").addEventListener("click", () => {
   if (playing) stopPlay();
