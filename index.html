@@ -290,6 +290,7 @@
   #view-seq .thead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2)}
   #view-seq .swatch{width:14px;height:14px;border-radius:4px;flex:none}
   #view-seq .tname{flex:1;background:none;border:none;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;min-width:0}
+  #view-seq .tbars{font-size:9px;color:var(--dim);white-space:nowrap;letter-spacing:.02em}
   #view-seq .tsel{background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-family:inherit;font-size:11px;padding:5px}
   #view-seq .ticon{background:none;border:none;color:var(--dim);font-family:inherit;font-size:14px;cursor:pointer;padding:4px 6px}
   #view-seq .ticon.on{color:var(--moon)}
@@ -3832,7 +3833,7 @@ function vPiano(e,t,f,d){const c=e.ctx;const env=c.createGain();env.gain.value=0
   lp.type="lowpass";lp.frequency.setValueAtTime(5200,t);lp.frequency.exponentialRampToValueAtTime(1100,t+1.1);lp.connect(env);env.connect(e.lead.g);
   [[1,"triangle",.5],[1.0016,"triangle",.4],[2,"sine",.18]].forEach(sp=>{const o=c.createOscillator();o.type=sp[1];
     o.frequency.value=f*sp[0];const g=c.createGain();g.gain.value=sp[2];o.connect(g);g.connect(lp);o.start(t);o.stop(t+d+.5);});
-  env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(1,t+.005);env.gain.exponentialRampToValueAtTime(.28,t+Math.min(1,d+.3));
+  env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(1,t+.005);env.gain.exponentialRampToValueAtTime(.28,t+Math.min(1,Math.max(d,.03)));
   env.gain.setValueAtTime(.28,t+d);env.gain.linearRampToValueAtTime(0,t+d+.35);}
 function vEPiano(e,t,f,d){const c=e.ctx;const car=c.createOscillator();car.type="sine";car.frequency.value=f;
   const mod=c.createOscillator();mod.type="sine";mod.frequency.value=f;const mg=c.createGain();mg.gain.setValueAtTime(f*2.2,t);
@@ -3948,7 +3949,7 @@ function vSynthBass(e,t,f,d){const c=e.ctx;const env=c.createGain();env.gain.val
   const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.setValueAtTime(1400,t);lp.frequency.exponentialRampToValueAtTime(400,t+0.25);lp.connect(env);
   const sub=c.createOscillator();sub.type="sine";sub.frequency.value=f/2;const sg=c.createGain();sg.gain.value=0.5;sub.connect(sg);sg.connect(env);
   const o=c.createOscillator();o.type="sawtooth";o.frequency.value=f;const g=c.createGain();g.gain.value=0.5;o.connect(g);g.connect(lp);
-  env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.85,t+0.01);env.gain.setValueAtTime(0.7,t+d);env.gain.linearRampToValueAtTime(0,t+d+0.1);
+  env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.85,t+0.01);env.gain.setValueAtTime(0.85,t+d);env.gain.linearRampToValueAtTime(0,t+d+0.12);
   [sub,o].forEach(x=>{x.start(t);x.stop(t+d+0.15);});}
 function vBanjo(e,t,f,d){pluck(e,t,f,d,0.986,5200,0.8);}
 function vSitar(e,t,f,d){const c=e.ctx;pluck(e,t,f,d,0.9965,4000,0.6);
@@ -3972,6 +3973,7 @@ let SONG = { name:"", bpm:110, bars:4, res:2, tracks:[] };
 let selTrack = 0, curLen = 1, curVel = 0.8, metro = false;
 let playing = false, playTimers = [], playEnv = null, rafId = null, playStart = 0;
 let vocalSources = [];
+let playNodes = [];   // this play's per-track nodes; disconnected on stop
 let liveGains = {};   // per-track gain nodes active during playback (live volume)
 // recompute one track's live gain from its current vol/boost; applied smoothly to avoid clicks
 function refreshLiveGain(ti){
@@ -4223,6 +4225,7 @@ function renderTracks(){
     head.innerHTML =
       '<span class="swatch" style="background:' + color + '"></span>' +
       '<input class="tname" value="' + tr.name.replace(/"/g,"&quot;") + '">' +
+      (vocal ? '' : '<span class="tbars"></span>') +
       instSel +
       '<button class="ticon mute' + (tr.mute?" on":"") + '" title="Mute">M</button>' +
       '<button class="ticon solo' + (tr.solo?" on":"") + '" title="Solo">S</button>' +
@@ -4443,14 +4446,20 @@ function stopPlay(){
   playTimers.forEach(clearTimeout); playTimers = [];
   if (rafId) cancelAnimationFrame(rafId), rafId = null;
   vocalSources.forEach(s => { try { s.stop(); } catch(e){} }); vocalSources = [];
+  // fade this play's track nodes, then disconnect them so nothing accumulates
+  // across play/stop cycles; the shared graph (playEnv) stays for reuse
+  const done = playNodes; playNodes = [];
+  done.forEach(n => { try { if (n.gain) n.gain.setTargetAtTime(0, actx.currentTime, .05); } catch(e){} });
+  setTimeout(() => done.forEach(n => { try { n.disconnect(); } catch(e){} }), 300);
   liveGains = {};
-  if (playEnv){ try { playEnv.out.gain.setTargetAtTime(0, actx.currentTime, .05); } catch(e){} }
   document.querySelectorAll(".rollwrap .ph").forEach(ph=>{ ph.setAttribute("x1",-1); ph.setAttribute("x2",-1); });
-  playing = false; $("seq-play").textContent = "Play"; playEnv = null;
+  playing = false; $("seq-play").textContent = "Play";
 }
 function startPlay(){
   ensureCtx(); actx.resume();
-  playEnv = buildEnv(actx, sharedBufs);
+  // Reuse one persistent graph: rebuilding per play stacked live convolvers
+  // (never disconnected), grinding the audio thread after 2-3 play/stop cycles.
+  if (!playEnv || playEnv.ctx !== actx) playEnv = buildEnv(actx, sharedBufs);
   const spb = 60 / SONG.bpm;                 // seconds per beat
   const stepDur = spb / SONG.res;            // seconds per grid step
   const steps = totalSteps();
@@ -4468,12 +4477,14 @@ function startPlay(){
       const comp = actx.createDynamicsCompressor();
       comp.threshold.value = -18; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
       node.connect(comp); comp.connect(playEnv.out);
+      playNodes.push(node, comp);
     } else {
       node.gain.value = (tr.vol==null?0.85:tr.vol);
       node.connect(playEnv.out);
       // keep some reverb like the old per-instrument channels did
       const send = actx.createGain(); send.gain.value = 0.28;
       node.connect(send); send.connect(playEnv.verb);
+      playNodes.push(node, send);
     }
     liveGains[idx] = node;
   });
@@ -4545,16 +4556,18 @@ function startPlay(){
     if (el < 0) el = 0;
     const x = LABELW + (el / stepDur) * CELL;
     document.querySelectorAll(".rollwrap .ph").forEach(ph=>{ ph.setAttribute("x1",x); ph.setAttribute("x2",x); });
-    // Follow: page every grid along with the playhead (once per page crossing,
-    // so manual scrolling within a page isn't fought).
+    // Follow: glide the view bar by bar so the playhead never leaves the
+    // screen (smooth scroll, once per bar crossing — manual scrolling within
+    // a bar isn't fought).
     if ($("seq-follow").checked){
       const g = pgGeom();
       if (g){
-        const pagePx = g.per * g.barPx;
-        const target = Math.max(0, Math.floor((x - LABELW) / pagePx) * pagePx);
-        if (target !== followPos){
-          followPos = target;
-          pgWraps().forEach(w => { w.scrollLeft = target; });
+        const bar = Math.floor((x - LABELW) / g.barPx);
+        if (bar !== followPos){
+          followPos = bar;
+          const max = g.w0.scrollWidth - g.w0.clientWidth;
+          const target = Math.max(0, Math.min(bar * g.barPx, max));
+          pgWraps().forEach(w => { try { w.scrollTo({ left: target, behavior: "smooth" }); } catch(e){ w.scrollLeft = target; } });
           pagerSync();
         }
       }
@@ -4686,19 +4699,33 @@ function pgWraps(){ return document.querySelectorAll("#seq-tracks .rollwrap"); }
 function pgGeom(){
   const w0 = pgWraps()[0]; if (!w0) return null;
   const barPx = stepsPerBar() * CELL;
-  // fixed page size: 4 bars on phones, 8 on desktop / larger screens
-  return { w0, barPx, per: window.innerWidth >= 760 ? 8 : 4 };
+  // adaptive page size: however many whole bars actually fit the screen at the
+  // current zoom and grid resolution (at least 1)
+  return { w0, barPx, per: Math.max(1, Math.floor(w0.clientWidth / barPx)) };
 }
+function barsLabel(from, to){ return from === to ? "Bar " + from : "Bars " + from + "–" + to; }
 function pagerSync(){
   const g = pgGeom(), el = $("seq-pgInfo");
-  if (!g || SONG.bars <= g.per){ $("seq-pager").style.display = "none"; return; }
-  $("seq-pager").style.display = "";
-  const bar = Math.min(SONG.bars - 1, Math.round(g.w0.scrollLeft / g.barPx));
-  el.textContent = "Bars " + (bar + 1) + "–" + Math.min(bar + g.per, SONG.bars) + " of " + SONG.bars;
-  if (!g.w0._pgHooked){
-    g.w0._pgHooked = true;
-    g.w0.addEventListener("scroll", () => { clearTimeout(g.w0._pgT); g.w0._pgT = setTimeout(pagerSync, 80); }, { passive: true });
+  if (!g || SONG.bars <= g.per){ $("seq-pager").style.display = "none"; }
+  else {
+    $("seq-pager").style.display = "";
+    const bar = Math.min(SONG.bars - 1, Math.round(g.w0.scrollLeft / g.barPx));
+    el.textContent = barsLabel(bar + 1, Math.min(bar + g.per, SONG.bars)) + " of " + SONG.bars;
   }
+  if (!g) return;
+  // per-track "which bars am I looking at" labels, from each grid's own scroll
+  pgWraps().forEach(w => {
+    const lbl = w.closest(".track") && w.closest(".track").querySelector(".tbars");
+    if (lbl){
+      const b0 = Math.floor(w.scrollLeft / g.barPx);
+      const b1 = Math.max(b0 + 1, Math.min(Math.ceil((w.scrollLeft + w.clientWidth - LABELW) / g.barPx), SONG.bars));
+      lbl.textContent = barsLabel(b0 + 1, b1);
+    }
+    if (!w._pgHooked){
+      w._pgHooked = true;
+      w.addEventListener("scroll", () => { clearTimeout(w._pgT); w._pgT = setTimeout(pagerSync, 80); }, { passive: true });
+    }
+  });
 }
 let pgRz = null;
 window.addEventListener("resize", () => { clearTimeout(pgRz); pgRz = setTimeout(pagerSync, 150); });
