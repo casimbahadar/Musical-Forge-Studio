@@ -1102,9 +1102,17 @@ function makeBuffers(ctx){
 }
 
 function buildEnv(ctx, bufs){
+  // Master limiter: dense themes sum past 1.0, and encodeWav hard-clamps
+  // anything over full scale — that distorts the loudest moments of exported
+  // WAVs (and live playback). Squash peaks instead. Same guard the sequencer
+  // engine uses; applies to Theme Forge and Score Composer, live and export.
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -10; limiter.knee.value = 8; limiter.ratio.value = 12;
+  limiter.attack.value = 0.003; limiter.release.value = 0.25;
+  limiter.connect(ctx.destination);
   const master = ctx.createBiquadFilter();
   master.type = "lowpass"; master.frequency.value = 6500;
-  master.connect(ctx.destination);
+  master.connect(limiter);
 
   const out = ctx.createGain(); out.gain.value = 0.9; out.connect(master);
   const verb = ctx.createConvolver(); verb.buffer = bufs.ir;
