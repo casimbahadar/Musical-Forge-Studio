@@ -31,18 +31,32 @@ cd tools/themes
 node make-specs.js /path/to/themes.json ./specs-base ./specs
 node build-themes.js ./specs /tmp/theme-songs
 
-# 100 songs
-cd tools/songs && node gen-songs.js <seed> /tmp/songs
+# 100 songs — first arg is the COUNT, not a seed. Seeds are derived per song
+# (0x5EED + i*7919) so output is deterministic without one. Do not exceed 100:
+# names.js holds exactly 100 unique titles and the generator refuses to reuse.
+cd tools/songs && node gen-songs.js 100 /tmp/songs
 
-# audio (needs playwright-core + lamejs installed in LAMEJS_DIR)
-node tools/render-mp3.js /tmp/theme-songs /tmp/theme-songs/_render_index.json \
-                         /tmp/out 0 26 batch1
+# audio — needs playwright-core (a require) and lamejs (injected into the page)
+npm i playwright-core lamejs        # in some dir, then point the vars at it
+NODE_PATH=/that/dir/node_modules LAMEJS_DIR=/that/dir \
+  node tools/render-mp3.js /tmp/theme-songs /tmp/theme-songs/_render_index.json \
+                           /tmp/out 0 26 batch1
 ```
 
-`render-mp3.js` reads `CHROMIUM`, `APP_URL` and `LAMEJS_DIR` from the
-environment; defaults point at the repo's own `index.html`. It resumes by
-skipping outputs that already exist and rebuilds its page after a failure, so a
-killed batch can simply be re-run.
+`render-mp3.js` reads four environment variables:
+
+| var | purpose |
+|---|---|
+| `NODE_PATH` | must resolve `playwright-core` — the repo itself has no `node_modules` |
+| `LAMEJS_DIR` | dir containing `node_modules/lamejs/lame.min.js`, injected into the page |
+| `APP_URL` | defaults to the repo's own `index.html` |
+| `CHROMIUM` | headless_shell binary path |
+
+It resumes by skipping outputs that already exist and rebuilds its page after a
+failure, so a killed batch can simply be re-run. Dense arrangements can take
+20+ minutes each; the internal wait is 35 minutes per song. Expect roughly
+realtime throughput per worker, and do not run more workers than cores minus
+one — CPU starvation is what caused the render timeouts during the first batch.
 
 ## Two rules worth keeping
 
