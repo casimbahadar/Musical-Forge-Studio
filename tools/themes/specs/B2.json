@@ -1,0 +1,37 @@
+{
+ "id": "B2",
+ "title": "Trainer Battle — Fair Odds, Sharp Elbows",
+ "key": "D",
+ "scale": "minor",
+ "bpm": 138,
+ "res": 4,
+ "targetSec": 165,
+ "prog": [
+  0,
+  5,
+  6,
+  4
+ ],
+ "lead": "brass",
+ "bass": "synthbass",
+ "pad": "organ",
+ "bassStyle": "oct",
+ "drums": "drive16",
+ "reg": 74,
+ "dens": 0.85,
+ "mix": 1,
+ "legato": 1,
+ "seed": 202,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "square",
+ "counter": "epiano"
+}

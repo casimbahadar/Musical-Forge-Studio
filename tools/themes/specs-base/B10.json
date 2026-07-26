@@ -1,0 +1,18 @@
+{
+  "id": "B10",
+  "title": "NG+ Trainer — Same Road, Sharper Teeth",
+  "key": "A",
+  "scale": "mixolydian",
+  "bpm": 148,
+  "res": 4,
+  "targetSec": 162,
+  "prog": [0, 6, 3, 4],
+  "lead": "guitar",
+  "pad": "epiano",
+  "bass": "synthbass",
+  "arp": "marimba",
+  "drums": "straight8",
+  "reg": 72,
+  "dens": 0.82,
+  "arc": ["intro", "A", "A", "B", "C", "climax", "outro"]
+}

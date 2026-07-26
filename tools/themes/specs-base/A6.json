@@ -1,0 +1,19 @@
+{
+  "id": "A6",
+  "title": "Ice Route — Where the Light Freezes",
+  "key": "A",
+  "scale": "lydian",
+  "bpm": 81,
+  "res": 2,
+  "targetSec": 205,
+  "prog": [0, 4, 1, 5, 3, 4],
+  "lead": "celesta",
+  "pad": "choir",
+  "bass": "pizz",
+  "arp": "musicbox",
+  "counter": "bell",
+  "drums": "sparseHat",
+  "reg": 79,
+  "dens": 0.42,
+  "arc": ["intro", "A", "A", "B", "A", "C", "climax", "outro"]
+}

@@ -1,0 +1,37 @@
+{
+ "id": "B8",
+ "title": "Legendary — The Waking of an Old God",
+ "key": "C",
+ "scale": "minor",
+ "bpm": 120,
+ "res": 2,
+ "targetSec": 192,
+ "prog": [
+  0,
+  5,
+  3,
+  6
+ ],
+ "lead": "bell",
+ "bass": "synthbass",
+ "pad": "choir",
+ "bassStyle": "whole",
+ "drums": "drive16",
+ "reg": 72,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 208,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "celesta",
+ "counter": "organ"
+}

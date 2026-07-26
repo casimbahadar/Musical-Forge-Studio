@@ -1,0 +1,19 @@
+{
+  "id": "A11",
+  "title": "City — Glass Towers, Ten Thousand Strangers",
+  "key": "C",
+  "scale": "minor",
+  "bpm": 103,
+  "res": 4,
+  "targetSec": 165,
+  "prog": [0, 6, 3, 5],
+  "lead": "sawlead",
+  "pad": "ooh",
+  "bass": "square",
+  "arp": "epiano",
+  "counter": "strings",
+  "drums": "drive16",
+  "reg": 74,
+  "dens": 0.68,
+  "arc": ["intro", "A", "B", "A", "B", "C", "climax", "outro"]
+}

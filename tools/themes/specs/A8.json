@@ -1,0 +1,36 @@
+{
+ "id": "A8",
+ "title": "Sky Route — Nothing Below but Weather",
+ "key": "C",
+ "scale": "lydian",
+ "bpm": 100,
+ "res": 2,
+ "targetSec": 195,
+ "prog": [
+  0,
+  4,
+  5,
+  3
+ ],
+ "lead": "fm",
+ "bass": "piano",
+ "pad": "ooh",
+ "bassStyle": "walk",
+ "drums": "backbeat",
+ "reg": 72,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 108,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "choir"
+}

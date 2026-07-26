@@ -1,0 +1,19 @@
+{
+  "id": "A7",
+  "title": "Poison Route — The Slow Rot Beneath",
+  "key": "F",
+  "scale": "phrygian",
+  "bpm": 90,
+  "res": 4,
+  "targetSec": 200,
+  "prog": [0, 1, 0, 6, 1, 4],
+  "lead": "sitar",
+  "pad": "organ",
+  "bass": "synthbass",
+  "arp": "pizz",
+  "counter": "ooh",
+  "drums": "heartbeat",
+  "reg": 64,
+  "dens": 0.5,
+  "arc": ["intro", "A", "A", "B", "C", "climax", "A", "outro"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "A14",
+  "title": "Post-Game — Long Light After the Credits",
+  "key": "E",
+  "scale": "dorian",
+  "bpm": 99,
+  "res": 2,
+  "targetSec": 185,
+  "prog": [0, 6, 3, 2],
+  "lead": "fm",
+  "pad": "ooh",
+  "bass": "guitar",
+  "arp": "celesta",
+  "counter": "piano",
+  "drums": "sparseHat",
+  "reg": 76,
+  "dens": 0.5,
+  "arc": ["intro", "A", "B", "A", "C", "B", "outro"]
+}

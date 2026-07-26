@@ -1,0 +1,19 @@
+{
+  "id": "B6",
+  "title": "Elite Four — The Four Seats of Judgement",
+  "key": "B",
+  "scale": "harmonic",
+  "bpm": 144,
+  "res": 2,
+  "targetSec": 186,
+  "prog": [0, 5, 3, 4],
+  "lead": "brass",
+  "pad": "strings",
+  "bass": "synthbass",
+  "arp": "harp",
+  "counter": "organ",
+  "drums": "marchy",
+  "reg": 74,
+  "dens": 0.8,
+  "arc": ["intro", "A", "B", "A", "C", "climax", "outro"]
+}

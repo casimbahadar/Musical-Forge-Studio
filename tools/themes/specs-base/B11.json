@@ -1,0 +1,19 @@
+{
+  "id": "B11",
+  "title": "Forgotten Lumori — What the Deep Water Kept",
+  "key": "G#",
+  "scale": "wholeTone",
+  "bpm": 126,
+  "res": 2,
+  "targetSec": 175,
+  "prog": [0, 2, 5, 3],
+  "lead": "musicbox",
+  "pad": "ooh",
+  "bass": "pizz",
+  "arp": "celesta",
+  "counter": "sitar",
+  "drums": "heartbeat",
+  "reg": 79,
+  "dens": 0.45,
+  "arc": ["intro", "A", "B", "C", "A", "climax", "outro"]
+}

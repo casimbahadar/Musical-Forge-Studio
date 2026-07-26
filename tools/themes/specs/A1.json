@@ -1,0 +1,36 @@
+{
+ "id": "A1",
+ "title": "Overworld — Every Road Out of Lumoria",
+ "key": "G",
+ "scale": "major",
+ "bpm": 108,
+ "res": 2,
+ "targetSec": 190,
+ "prog": [
+  0,
+  5,
+  3,
+  4
+ ],
+ "lead": "piano",
+ "bass": "synthbass",
+ "pad": "strings",
+ "bassStyle": "pulse",
+ "drums": "straight8",
+ "reg": 67,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 101,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "guitar"
+}

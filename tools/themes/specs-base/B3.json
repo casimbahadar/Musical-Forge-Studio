@@ -1,0 +1,19 @@
+{
+  "id": "B3",
+  "title": "Gym Battle — The Badge Is Earned, Not Given",
+  "key": "G",
+  "scale": "harmonic",
+  "bpm": 140,
+  "res": 2,
+  "targetSec": 180,
+  "prog": [0, 3, 5, 4, 0, 5, 3, 4],
+  "lead": "brass",
+  "pad": "strings",
+  "bass": "synthbass",
+  "arp": "bell",
+  "counter": "organ",
+  "drums": "marchy",
+  "reg": 71,
+  "dens": 0.78,
+  "arc": ["intro", "A", "B", "A", "C", "B", "climax", "outro"]
+}

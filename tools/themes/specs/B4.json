@@ -1,0 +1,37 @@
+{
+ "id": "B4",
+ "title": "Rival Battle — You Again, and You're Smirking",
+ "key": "E",
+ "scale": "harmonic",
+ "bpm": 144,
+ "res": 4,
+ "targetSec": 172,
+ "prog": [
+  0,
+  5,
+  3,
+  4
+ ],
+ "lead": "piano",
+ "bass": "synthbass",
+ "pad": "strings",
+ "bassStyle": "oct",
+ "drums": "doubleTime",
+ "reg": 76,
+ "dens": 0.85,
+ "mix": 1,
+ "legato": 1,
+ "seed": 204,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "celesta",
+ "counter": "sawlead"
+}

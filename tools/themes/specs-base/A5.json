@@ -1,0 +1,19 @@
+{
+  "id": "A5",
+  "title": "Electric Route — Voltage in the Rain",
+  "key": "B",
+  "scale": "dorian",
+  "bpm": 124,
+  "res": 4,
+  "targetSec": 185,
+  "prog": [0, 3, 6, 4, 0, 3, 1, 4],
+  "lead": "sawlead",
+  "pad": "strings",
+  "bass": "synthbass",
+  "arp": "square",
+  "counter": "epiano",
+  "drums": "drive16",
+  "reg": 74,
+  "dens": 0.68,
+  "arc": ["intro", "A", "B", "A", "B", "C", "climax", "outro"]
+}

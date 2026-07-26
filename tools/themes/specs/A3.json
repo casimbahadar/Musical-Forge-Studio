@@ -1,0 +1,35 @@
+{
+ "id": "A3",
+ "title": "Coastal — Salt Air and Open Water",
+ "key": "A",
+ "scale": "major",
+ "bpm": 88,
+ "res": 4,
+ "targetSec": 205,
+ "prog": [
+  0,
+  3,
+  5,
+  4
+ ],
+ "lead": "harp",
+ "bass": "organ",
+ "pad": "choir",
+ "bassStyle": "walk",
+ "drums": "backbeat",
+ "reg": 69,
+ "dens": 0.42,
+ "mix": 1.12,
+ "legato": 1.3,
+ "seed": 103,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "fm"
+}

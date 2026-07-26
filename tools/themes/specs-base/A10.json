@@ -1,0 +1,18 @@
+{
+  "id": "A10",
+  "title": "Town — Lanterns and Open Doors",
+  "key": "F",
+  "scale": "major",
+  "bpm": 92,
+  "res": 2,
+  "targetSec": 110,
+  "prog": [0, 5, 3, 4],
+  "lead": "accordion",
+  "pad": "strings",
+  "bass": "pizz",
+  "arp": "marimba",
+  "drums": "shuffle",
+  "reg": 76,
+  "dens": 0.45,
+  "arc": ["intro", "A", "A", "B", "A", "outro"]
+}

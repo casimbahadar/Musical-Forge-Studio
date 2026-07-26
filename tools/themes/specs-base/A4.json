@@ -1,0 +1,19 @@
+{
+  "id": "A4",
+  "title": "Volcanic Route — Ashfall Over the Caldera",
+  "key": "D",
+  "scale": "harmonic",
+  "bpm": 117,
+  "res": 2,
+  "targetSec": 190,
+  "prog": [0, 5, 3, 4, 0, 6, 4],
+  "lead": "brass",
+  "pad": "strings",
+  "bass": "synthbass",
+  "arp": "steeldrum",
+  "counter": "organ",
+  "drums": "tribal",
+  "reg": 69,
+  "dens": 0.6,
+  "arc": ["intro", "A", "A", "B", "A", "C", "climax", "outro"]
+}

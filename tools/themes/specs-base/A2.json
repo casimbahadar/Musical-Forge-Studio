@@ -1,0 +1,19 @@
+{
+  "id": "A2",
+  "title": "Forest — Light Through the Canopy",
+  "key": "E",
+  "scale": "dorian",
+  "bpm": 96,
+  "res": 2,
+  "targetSec": 200,
+  "prog": [0, 6, 3, 4],
+  "lead": "fm",
+  "pad": "ooh",
+  "bass": "pizz",
+  "arp": "marimba",
+  "counter": "harp",
+  "drums": "sparseHat",
+  "reg": 76,
+  "dens": 0.55,
+  "arc": ["intro", "A", "B", "A", "C", "B", "climax", "outro"]
+}
