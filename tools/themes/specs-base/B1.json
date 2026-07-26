@@ -1,0 +1,17 @@
+{
+  "id": "B1",
+  "title": "Wild Battle — Grass in Motion",
+  "key": "A",
+  "scale": "minor",
+  "bpm": 132,
+  "res": 4,
+  "targetSec": 155,
+  "prog": [0, 5, 3, 4],
+  "lead": "square",
+  "bass": "synthbass",
+  "arp": "marimba",
+  "drums": "straight8",
+  "reg": 76,
+  "dens": 0.6,
+  "arc": ["intro", "A", "B", "A", "climax", "outro"]
+}

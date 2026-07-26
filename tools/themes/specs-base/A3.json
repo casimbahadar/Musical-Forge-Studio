@@ -1,0 +1,19 @@
+{
+  "id": "A3",
+  "title": "Coastal — Salt Air and Open Water",
+  "key": "C#",
+  "scale": "minor",
+  "bpm": 89,
+  "res": 2,
+  "targetSec": 205,
+  "prog": [0, 5, 2, 6, 3, 4],
+  "lead": "celesta",
+  "pad": "choir",
+  "bass": "organ",
+  "arp": "harp",
+  "counter": "fm",
+  "drums": "straight8",
+  "reg": 79,
+  "dens": 0.52,
+  "arc": ["intro", "A", "B", "A", "C", "climax", "A", "outro"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "A8",
+  "title": "Sky Route — Nothing Below but Weather",
+  "key": "C#",
+  "scale": "dorian",
+  "bpm": 103,
+  "res": 2,
+  "targetSec": 195,
+  "prog": [0, 3, 5, 1, 4, 0, 3],
+  "lead": "fm",
+  "pad": "ooh",
+  "bass": "piano",
+  "arp": "harp",
+  "counter": "choir",
+  "drums": "straight8",
+  "reg": 76,
+  "dens": 0.55,
+  "arc": ["intro", "A", "B", "A", "C", "B", "climax", "outro"]
+}

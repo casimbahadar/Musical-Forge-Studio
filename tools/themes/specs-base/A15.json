@@ -1,0 +1,19 @@
+{
+  "id": "A15",
+  "title": "Forgotten Lumori — The Hollow Beneath the Map",
+  "key": "C#",
+  "scale": "phrygdom",
+  "bpm": 144,
+  "res": 2,
+  "targetSec": 230,
+  "prog": [0, 1, 5, 6],
+  "lead": "sitar",
+  "pad": "organ",
+  "bass": "marimba",
+  "arp": "celesta",
+  "counter": "choir",
+  "drums": "straight8",
+  "reg": 78,
+  "dens": 0.6,
+  "arc": ["intro", "A", "A", "B", "C", "B", "climax", "A", "outro"]
+}

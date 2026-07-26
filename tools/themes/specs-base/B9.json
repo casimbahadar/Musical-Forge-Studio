@@ -1,0 +1,17 @@
+{
+  "id": "B9",
+  "title": "PvP — Ladder Lights",
+  "key": "E",
+  "scale": "dorian",
+  "bpm": 144,
+  "res": 4,
+  "targetSec": 153,
+  "prog": [0, 6, 3, 4],
+  "lead": "square",
+  "bass": "synthbass",
+  "arp": "sawlead",
+  "drums": "drive16",
+  "reg": 76,
+  "dens": 0.88,
+  "arc": ["intro", "A", "B", "A", "climax", "B", "outro"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "A9",
+  "title": "Dragonspire — The Last Ascent",
+  "key": "D",
+  "scale": "minor",
+  "bpm": 112,
+  "res": 2,
+  "targetSec": 225,
+  "prog": [0, 5, 6, 4],
+  "lead": "brass",
+  "pad": "choir",
+  "bass": "synthbass",
+  "arp": "bell",
+  "counter": "organ",
+  "drums": "tribal",
+  "reg": 74,
+  "dens": 0.8,
+  "arc": ["intro", "A", "B", "A", "C", "B", "climax", "outro"]
+}

@@ -1,0 +1,35 @@
+{
+ "id": "A6",
+ "title": "Ice Route — Where the Light Freezes",
+ "key": "D",
+ "scale": "lydian",
+ "bpm": 80,
+ "res": 4,
+ "targetSec": 205,
+ "prog": [
+  0,
+  1,
+  4,
+  0
+ ],
+ "lead": "bell",
+ "bass": "strings",
+ "pad": "choir",
+ "bassStyle": "whole",
+ "drums": "sparseHat",
+ "reg": 74,
+ "dens": 0.42,
+ "mix": 1.32,
+ "legato": 1.45,
+ "seed": 106,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "brass"
+}

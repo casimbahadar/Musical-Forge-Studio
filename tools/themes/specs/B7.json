@@ -1,0 +1,37 @@
+{
+ "id": "B7",
+ "title": "Champion — Crown of Embers",
+ "key": "F#",
+ "scale": "harmonic",
+ "bpm": 150,
+ "res": 4,
+ "targetSec": 220,
+ "prog": [
+  0,
+  5,
+  6,
+  4
+ ],
+ "lead": "brass",
+ "bass": "synthbass",
+ "pad": "choir",
+ "bassStyle": "oct",
+ "drums": "doubleTime",
+ "reg": 66,
+ "dens": 0.85,
+ "mix": 1,
+ "legato": 1,
+ "seed": 207,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "square",
+ "counter": "epiano"
+}

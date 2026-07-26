@@ -1,0 +1,18 @@
+{
+  "id": "B4",
+  "title": "Rival Battle — You Again, and You're Smirking",
+  "key": "E",
+  "scale": "phrygian",
+  "bpm": 144,
+  "res": 4,
+  "targetSec": 172,
+  "prog": [0, 1, 5, 6, 0, 1],
+  "lead": "guitar",
+  "pad": "strings",
+  "bass": "synthbass",
+  "counter": "sawlead",
+  "drums": "doubleTime",
+  "reg": 79,
+  "dens": 0.86,
+  "arc": ["intro", "A", "B", "A", "C", "climax", "B", "outro"]
+}

@@ -1,0 +1,37 @@
+{
+ "id": "A5",
+ "title": "Electric Route — Voltage in the Rain",
+ "key": "E",
+ "scale": "minor",
+ "bpm": 124,
+ "res": 4,
+ "targetSec": 185,
+ "prog": [
+  0,
+  5,
+  6,
+  4
+ ],
+ "lead": "square",
+ "bass": "synthbass",
+ "pad": "strings",
+ "bassStyle": "oct",
+ "drums": "straight8",
+ "reg": 76,
+ "dens": 0.85,
+ "mix": 1,
+ "legato": 1,
+ "seed": 105,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "celesta",
+ "counter": "epiano"
+}

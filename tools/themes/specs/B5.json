@@ -1,0 +1,37 @@
+{
+ "id": "B5",
+ "title": "Umbra Battle — Something Wearing a Shape",
+ "key": "C",
+ "scale": "phrygian",
+ "bpm": 136,
+ "res": 4,
+ "targetSec": 195,
+ "prog": [
+  0,
+  1,
+  0,
+  4
+ ],
+ "lead": "strings",
+ "bass": "synthbass",
+ "pad": "choir",
+ "bassStyle": "oct",
+ "drums": "drive16",
+ "reg": 72,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 205,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "steeldrum",
+ "counter": "organ"
+}

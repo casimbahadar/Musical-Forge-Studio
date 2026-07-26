@@ -1,0 +1,36 @@
+{
+ "id": "A10",
+ "title": "Town — Lanterns and Open Doors",
+ "key": "F",
+ "scale": "major",
+ "bpm": 92,
+ "res": 2,
+ "targetSec": 110,
+ "prog": [
+  0,
+  5,
+  3,
+  4
+ ],
+ "lead": "marimba",
+ "bass": "organ",
+ "pad": "strings",
+ "bassStyle": "walk",
+ "drums": "backbeat",
+ "reg": 65,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 110,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "brass"
+}

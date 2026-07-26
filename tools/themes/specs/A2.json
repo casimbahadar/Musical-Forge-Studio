@@ -1,0 +1,36 @@
+{
+ "id": "A2",
+ "title": "Forest — Light Through the Canopy",
+ "key": "D",
+ "scale": "dorian",
+ "bpm": 96,
+ "res": 2,
+ "targetSec": 200,
+ "prog": [
+  0,
+  3,
+  4,
+  0
+ ],
+ "lead": "guitar",
+ "bass": "organ",
+ "pad": "ooh",
+ "bassStyle": "walk",
+ "drums": "backbeat",
+ "reg": 74,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 102,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "harp"
+}

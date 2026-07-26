@@ -1,0 +1,19 @@
+{
+  "id": "B8",
+  "title": "Legendary — The Waking of an Old God",
+  "key": "G",
+  "scale": "phrygian",
+  "bpm": 120,
+  "res": 2,
+  "targetSec": 192,
+  "prog": [0, 1, 3, 0],
+  "lead": "ooh",
+  "pad": "choir",
+  "bass": "synthbass",
+  "arp": "bell",
+  "counter": "organ",
+  "drums": "tribal",
+  "reg": 67,
+  "dens": 0.55,
+  "arc": ["intro", "A", "B", "A", "C", "climax", "A", "outro"]
+}

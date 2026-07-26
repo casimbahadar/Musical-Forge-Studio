@@ -1,0 +1,18 @@
+{
+  "id": "A13",
+  "title": "NG+ Overworld — The Same Roads, Colder",
+  "key": "E",
+  "scale": "harmonic",
+  "bpm": 112,
+  "res": 4,
+  "targetSec": 190,
+  "prog": [0, 3, 5, 4],
+  "lead": "square",
+  "pad": "strings",
+  "bass": "synthbass",
+  "counter": "brass",
+  "drums": "doubleTime",
+  "reg": 72,
+  "dens": 0.72,
+  "arc": ["intro", "A", "A", "B", "C", "climax", "A", "outro"]
+}

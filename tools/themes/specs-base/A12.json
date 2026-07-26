@@ -1,0 +1,18 @@
+{
+  "id": "A12",
+  "title": "Forgotten — What the Quest Left Behind",
+  "key": "B",
+  "scale": "minor",
+  "bpm": 72,
+  "res": 4,
+  "targetSec": 175,
+  "prog": [0, 5, 2, 4],
+  "lead": "musicbox",
+  "pad": "choir",
+  "bass": "organ",
+  "counter": "harp",
+  "drums": "heartbeat",
+  "reg": 78,
+  "dens": 0.35,
+  "arc": ["intro", "A", "A", "B", "C", "A", "outro"]
+}

@@ -1,0 +1,37 @@
+{
+ "id": "A9",
+ "title": "Dragonspire — The Last Ascent",
+ "key": "A",
+ "scale": "harmonic",
+ "bpm": 112,
+ "res": 2,
+ "targetSec": 225,
+ "prog": [
+  0,
+  5,
+  3,
+  4
+ ],
+ "lead": "brass",
+ "bass": "synthbass",
+ "pad": "choir",
+ "bassStyle": "oct",
+ "drums": "straight8",
+ "reg": 69,
+ "dens": 0.65,
+ "mix": 1,
+ "legato": 1,
+ "seed": 109,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "break",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "bell",
+ "counter": "organ"
+}

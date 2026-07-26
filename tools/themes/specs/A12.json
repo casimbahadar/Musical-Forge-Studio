@@ -1,0 +1,35 @@
+{
+ "id": "A12",
+ "title": "Forgotten — What the Quest Left Behind",
+ "key": "E",
+ "scale": "minor",
+ "bpm": 72,
+ "res": 4,
+ "targetSec": 175,
+ "prog": [
+  0,
+  2,
+  5,
+  4
+ ],
+ "lead": "piano",
+ "bass": "organ",
+ "pad": "choir",
+ "bassStyle": "whole",
+ "drums": "sparseHat",
+ "reg": 76,
+ "dens": 0.42,
+ "mix": 1.22,
+ "legato": 1.5,
+ "seed": 112,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "counter": "harp"
+}

@@ -1,0 +1,36 @@
+{
+ "id": "A15",
+ "title": "Forgotten Lumori — The Hollow Beneath the Map",
+ "key": "C#",
+ "scale": "minor",
+ "bpm": 66,
+ "res": 4,
+ "targetSec": 175,
+ "prog": [
+  0,
+  5,
+  1,
+  4
+ ],
+ "lead": "harp",
+ "bass": "organ",
+ "pad": "choir",
+ "bassStyle": "whole",
+ "drums": "none",
+ "reg": 73,
+ "dens": 0.52,
+ "mix": 1.28,
+ "legato": 1.6,
+ "seed": 115,
+ "arc": [
+  "intro",
+  "A",
+  "B",
+  "A",
+  "C",
+  "climax",
+  "outro"
+ ],
+ "arp": "celesta",
+ "counter": "ooh"
+}
