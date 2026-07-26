@@ -31,11 +31,20 @@ Inside `index.html`, roughly in order:
 - No build step, no bundler, no dependencies. It must stay one openable file.
 - No audio libraries. Raw Web Audio only.
 - Mobile-first; widens responsively. Every tool page carries a plain-language guide.
-- Deterministic generation: same recipe + seed ⇒ identical music, forever. Never
-  change a generator's RNG consumption order without accepting that every
+- Deterministic generation: same recipe + seed ⇒ identical **note data**, forever.
+  Never change a generator's RNG consumption order without accepting that every
   previously shared seed now renders differently.
-- Both audio engines end in a `DynamicsCompressor` limiter before `destination`.
-  Keep it. Dense material clips without it and `encodeWav` hard-clamps.
+- **Rendered audio is not bit-reproducible**, and that is by design: `makeBuffers`
+  fills the drum noise buffer and the reverb impulse response with `Math.random()`
+  on every render, and several voices re-randomize detune. Two renders of one song
+  differ by roughly ±0.0002 RMS and ±0.003 peak. Never write a byte-comparison
+  regression test on exported audio — compare peak/RMS within tolerance instead.
+- All three synthesis export paths end in a `DynamicsCompressor` limiter before
+  `destination`. Keep it. Dense material clips without it and `encodeWav`
+  hard-clamps. Remix Lab is the exception and needs a *different* guard — see
+  `buildRemixChain`, which ends in a limiter plus a bounded soft-clip WaveShaper,
+  because it processes the user's already-mastered audio and a −10 dB threshold
+  would crush it.
 
 ## Standing rules
 

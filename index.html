@@ -2285,7 +2285,46 @@ function buildRemixChain(ctx, buffer, P, irBuf, forExport){
   const wet = ctx.createGain(); wet.gain.value = P.verb * P.vol;
   shelf.connect(cv); cv.connect(wet); wet.connect(out);
 
-  return { src, parts: { out, pre, makeup, crush, hp, lp, shelf, dry, echoSend, delay, fb, wet, wobG } };
+  // Safety limiter. dry + echo + reverb sum in parallel and each scales with
+  // vol, so this node can reach ~3x full scale before echo feedback even starts
+  // regenerating — and encodeWav hard-clamps at +-1, so everything above it is
+  // lost. Measured on a dense track before this existed: untouched defaults
+  // clipped 392 samples, the Cavern Echo preset clipped 0.6% of the file, and
+  // the loudest settings the sliders allow peaked at 4.16 and clipped 20%.
+  //
+  // Unlike the two synthesis engines (threshold -10, ratio 12) this sits at -1
+  // with a hard knee: Remix Lab is fed the user's own already-mastered audio,
+  // and a -10 threshold would pull a normal track down to ~0.35 peak. At -1
+  // anything already under full scale passes essentially untouched and only
+  // overs get caught. The 0.97 trim absorbs the compressor's transient
+  // overshoot, which is real — it has no lookahead.
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -1; limiter.knee.value = 0; limiter.ratio.value = 20;
+  limiter.attack.value = 0.002; limiter.release.value = 0.1;
+
+  // The compressor alone is not enough: it has no lookahead, so transients
+  // still punched through (Cavern Echo peaked 1.049, the loudest slider
+  // settings 1.384). This soft clip is the actual guarantee. A WaveShaper's
+  // curve domain is [-1,1] and anything outside clamps to the endpoints, so
+  // whatever arrives, the output cannot exceed the curve's last value — 0.885
+  // here. Below 0.85 it is exactly linear, so ordinary material is untouched
+  // and only the overshoot gets bent. No oversampling, matching the drive
+  // stage above: an airtight bound matters more here than the slight aliasing
+  // of a stage that rarely engages.
+  const clipper = ctx.createWaveShaper();
+  const N = 2048, curve = new Float32Array(N), T = 0.85, CEIL = 0.95;
+  for (let i = 0; i < N; i++){
+    const x = -1 + 2 * i / (N - 1), a = Math.abs(x);
+    curve[i] = a <= T ? x
+      : Math.sign(x) * (T + (CEIL - T) * Math.tanh((a - T) / (CEIL - T)));
+  }
+  clipper.curve = curve;
+  const safety = ctx.createGain(); safety.gain.value = 1;
+  out.connect(limiter); limiter.connect(clipper); clipper.connect(safety);
+
+  // parts.out stays the terminal node so callers connect/disconnect unchanged
+  return { src, parts: { out: safety, sum: out, limiter, clipper,
+    pre, makeup, crush, hp, lp, shelf, dry, echoSend, delay, fb, wet, wobG } };
 }
 
 /* ---- FX parameters: read/write the control rack ---- */

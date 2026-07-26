@@ -12,6 +12,12 @@ something a user could have sequenced by hand.
 tools/
   render-mp3.js          headless renderer: loads a song into Forge Sequencer,
                          triggers Export, encodes MP3, logs peak/RMS/clipping
+  test-remix-clip.js     regression test: drives Remix Lab's real export across
+                         defaults, two shipped presets, the loudest settings the
+                         sliders allow, and two quiet cases, capturing each
+                         rendered buffer BEFORE encodeWav clamps it. Fails loud
+                         if any case exceeds full scale.
+                           node tools/test-remix-clip.js some-track.mp3
   themes/
     make-specs.js        Lumoria themes.json -> arrangement specs (applies the
                          sustain rule and the per-theme overrides)
@@ -86,3 +92,13 @@ the dominant in 22 of the 26 themes. Every arrangement stopped unresolved, on a
 single lone note. The progression is no longer allowed to decide the ending: the
 last two bars are forced to a V–I cadence and the final bar is voiced as a full
 sustained tonic chord.
+
+## Do not byte-compare rendered audio
+
+`makeBuffers` re-randomizes the drum noise buffer and the reverb impulse
+response on every render, and several voices randomize detune. Two renders of
+the same song from identical code differ by roughly ±0.0002 RMS and ±0.003
+peak. Byte comparison will report a difference that has nothing to do with the
+change under test. Compare peak/RMS within tolerance, and establish that a code
+path is unaffected structurally — by showing nothing reaches it — rather than by
+diffing output.
